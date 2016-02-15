@@ -3,6 +3,8 @@ Canonical scenarios
 
 # Overview
 
+This document outlines the End-to-End canonical scenarios for the CLI tooling. The scenarios outline the proposed steps that the 
+
 The scenarios are all grouped around the major activity that the developer is expected to do. Each scenario has the following components: 
 
 * A description of the scenario, from the perspective of the developer
@@ -92,7 +94,7 @@ The developer has acquired the .NET Command Line Interface (CLI) toolchain on he
 
 `cd testapp` 
 
-`dotnet init`
+`dotnet new`
 
 ### Results
 Directory is populated with 2 files:

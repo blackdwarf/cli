@@ -1,5 +1,8 @@
-Beta install options and experience
-===================================
+.NET Core CLI install options and experience
+============================================
+
+# Overview
+This document/spec outlines the 
 
 For the Beta timeframe, we will have two main install/acquisition experiences:
 
