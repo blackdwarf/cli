@@ -19,6 +19,9 @@ Common Options (passed before the command):
   -v|--verbose  Enable verbose output
   --version     Display .NET CLI Version Info
 
+Common Options for all commands (passed after the command):
+  --help        Display help for the command specified
+
 Common Commands:
   new           Initialize a basic .NET project
   restore       Restore dependencies specified in the .NET project
