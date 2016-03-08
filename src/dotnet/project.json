@@ -21,7 +21,10 @@
     "commands/dotnet-new/CSharp_Lib/project.json.template", 
     "commands/dotnet-new/FSharp_Lib/NuGet.config", 
     "commands/dotnet-new/FSharp_Lib/Library.fs", 
-    "commands/dotnet-new/FSharp_Lib/project.json.template"
+    "commands/dotnet-new/FSharp_Lib/project.json.template",
+    "commands/dotnet-new/CSharp_xunittest/NuGet.Config",
+    "commands/dotnet-new/CSharp_xunittest/Tests.cs",
+    "commands/dotnet-new/CSharp_xunittest/project.json.template"
  ],
   "dependencies": {
     "NuGet.Commands": {
