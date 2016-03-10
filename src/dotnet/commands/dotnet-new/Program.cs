@@ -40,6 +40,7 @@ namespace Microsoft.DotNet.Tools.New
             bool hasFilesToOverride = false;
             foreach (string resourceName in resources)
             {
+                Console.WriteLine(resourceName);
                 string fileName = GetFileNameFromResourceName(resourceName);
 
                 resourceNameToFileName.Add(resourceName, fileName);
@@ -72,6 +73,19 @@ namespace Microsoft.DotNet.Tools.New
             return 0;
         }
 
+        public int ListTemplates()
+        {
+            var thisAssembly = typeof(NewCommand).GetTypeInfo().Assembly;
+            var resources = from resourceName in thisAssembly.GetManifestResourceNames()
+                            where resourceName.Contains(templateDir)
+                            select resourceName;
+
+
+            Console.WriteLine("Here be the listing of templates...");
+            return 0;
+        }
+
+
         public static int Run(string[] args)
         {
             DebugHelper.HandleDebugSwitch(ref args);
@@ -84,9 +98,16 @@ namespace Microsoft.DotNet.Tools.New
 
             var lang = app.Option("-l|--lang <LANGUAGE>", "Language of project [C#|F#]", CommandOptionType.SingleValue);
             var type = app.Option("-t|--type <TYPE>", "Type of project", CommandOptionType.SingleValue);
+            var list = app.Option("-l|--list", "List available templates", CommandOptionType.NoValue);
 
             var dotnetNew = new NewCommand();
             app.OnExecute(() => {
+
+                // Here we check for the --list
+                if (list.HasValue())
+                {
+                    return dotnetNew.ListTemplates();
+                }
 
                 var csharp = new { Name = "C#", Alias = new[] { "c#", "cs", "csharp" }, TemplatePrefix = "CSharp", Templates = new[] { "Console", "Lib", "xunittest" } };
                 var fsharp = new { Name = "F#", Alias = new[] { "f#", "fs", "fsharp" }, TemplatePrefix = "FSharp", Templates = new[] { "Console", "Lib" } };
@@ -135,5 +156,6 @@ namespace Microsoft.DotNet.Tools.New
                 return 1;
             }
         }
+
     }
 }
