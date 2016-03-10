@@ -40,7 +40,6 @@ namespace Microsoft.DotNet.Tools.New
             bool hasFilesToOverride = false;
             foreach (string resourceName in resources)
             {
-                Console.WriteLine(resourceName);
                 string fileName = GetFileNameFromResourceName(resourceName);
 
                 resourceNameToFileName.Add(resourceName, fileName);
@@ -76,12 +75,21 @@ namespace Microsoft.DotNet.Tools.New
         public int ListTemplates()
         {
             var thisAssembly = typeof(NewCommand).GetTypeInfo().Assembly;
-            var resources = from resourceName in thisAssembly.GetManifestResourceNames()
-                            where resourceName.Contains(templateDir)
-                            select resourceName;
+            var resources = thisAssembly.GetManifestResourceNames()
+                                .Select(r => {
+                                    var templateName = r.Split(new string[] {"."}, StringSplitOptions.RemoveEmptyEntries)[3];
+                                    var nameParts = templateName.Split(new char[] {'_'}, StringSplitOptions.RemoveEmptyEntries);
+                                    return $"  - {nameParts[1].ToLowerInvariant()} ({nameParts[0].ToLowerInvariant()})";
+                                })
+                                .Distinct();
 
-
-            Console.WriteLine("Here be the listing of templates...");
+            Reporter.Output.WriteLine("Available templates:");
+            foreach (var resource in resources)
+            {
+                
+                Reporter.Output.WriteLine(resource);
+                
+            }
             return 0;
         }
 
