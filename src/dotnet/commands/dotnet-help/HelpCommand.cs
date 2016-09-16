@@ -19,6 +19,7 @@ Arguments:
 Common options:
   -v|--verbose          Enable verbose output
   -h|--help             Show help 
+  -r|--runtimes         List installed runtimes
 
 Host options (passed before the command):
   -v|--verbose          Enable verbose output

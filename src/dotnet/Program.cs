@@ -139,7 +139,11 @@ namespace Microsoft.DotNet.Cli
                         HelpCommand.PrintHelp();
                         return 0;
                     }
-                    else if (args[lastArg].StartsWith("-"))
+                    else if (IsArg(args[lastArg], "r", "runtimes"))
+                    {
+                        ListInstalledRuntimes();
+                        return 0;
+                    } else if (args[lastArg].StartsWith("-"))
                     {
                         Reporter.Error.WriteLine($"Unknown option: {args[lastArg]}");
                         success = false;
@@ -195,6 +199,26 @@ namespace Microsoft.DotNet.Cli
 
             return exitCode;
 
+        }
+
+        private static void ListInstalledRuntimes()
+        {
+            var muxer = new Muxer();
+            var separator = Path.DirectorySeparatorChar;
+            var sharedFxPath = $"{Path.GetDirectoryName(muxer.MuxerPath)}{separator}shared{separator}Microsoft.NETCore.App";
+            if (Directory.Exists(sharedFxPath))
+            {
+                Reporter.Output.WriteLine($"Install location: {sharedFxPath}");
+                Reporter.Output.WriteLine("Installed versions:");
+                foreach (var dir in Directory.EnumerateDirectories(sharedFxPath))
+                {
+                    Reporter.Output.WriteLine($"  - v{Path.GetFileName(dir)}");
+                }
+            }
+            else
+            {
+                Reporter.Error.WriteLine("You don't seem to have any shared frameworks installed.");
+            }
         }
 
         private static void ConfigureDotNetForFirstTimeUse(INuGetCacheSentinel nugetCacheSentinel)
