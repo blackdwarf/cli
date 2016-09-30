@@ -4,16 +4,65 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using Microsoft.DotNet.Cli.CommandLine;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Tools.MSBuild;
+using System.Linq;
+using Microsoft.DotNet.Tools.Common;
 
 namespace Microsoft.DotNet.Tools.Build
 {
     public class BuildCommand
     {
-        public int DropDefaultProject()
+        private static string GetFileNameFromResourceName(string s)
         {
+            // A.B.C.D.filename.extension
+            string[] parts = s.Split(new char[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2)
+            {
+                return null;
+            }
+
+            // filename.extension
+            return parts[parts.Length - 2] + "." + parts[parts.Length - 1];
+        }
+
+
+        public int DropDefaultProject(string dropPathDir, string dropPathFile)
+        {
+            PathUtility.EnsureDirectory(dropPathDir);
+            if (File.Exists(dropPathFile))
+            {
+                return 0;
+            }
+
+            var thisAssembly = typeof(Build3Command).GetTypeInfo().Assembly;
+            var resources = from resourceName in thisAssembly.GetManifestResourceNames()
+                            where resourceName.Contains("DefaultProject")
+                            select resourceName;
+
+            foreach (string resourceName in resources)
+            {
+                string fileName = GetFileNameFromResourceName(resourceName);
+
+                using (var resource = thisAssembly.GetManifestResourceStream(resourceName))
+                {
+                    try
+                    {
+
+                        using (var file = File.Create(dropPathFile))
+                        {
+                            resource.CopyTo(file);
+                        }
+                    } catch (IOException ex)
+                    {
+                        Reporter.Error.WriteLine(ex.Message);
+                        return 1;
+                    }
+                }
+            }
+
             return 0;
         }
         public static int Run(string[] args)
@@ -43,7 +92,7 @@ namespace Microsoft.DotNet.Tools.Build
             CommandOption noIncrementalOption = app.Option("--no-incremental", "Set this flag to turn off incremental build", CommandOptionType.NoValue);
             CommandOption noDependenciesOption = app.Option("--no-dependencies", "Set this flag to ignore project to project references and only build the root project", CommandOptionType.NoValue);
             CommandOption verbosityOption = MSBuildForwardingApp.AddVerbosityOption(app);
-
+            var build3 = new Build3Command();
             app.OnExecute(() =>
             {
                 List<string> msbuildArgs = new List<string>();
@@ -57,8 +106,16 @@ namespace Microsoft.DotNet.Tools.Build
                     var currentDir = Directory.GetCurrentDirectory();
                     if (Directory.GetFiles(currentDir, "*.cs").Length  > 0)
                     {
+                        // TODO: not good, this needs to go into the user folder somewhere since this way
+                        // we will escalate privilieges. 
+                        // TODO: can use getdirectoryname to get the first path, so...
+                        var dropPathDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "resources");
+                        // TODO: this needs to be configurable for fsproj and vbproj; for now just csproj
+                        var dropPathFile = Path.Combine(dropPathDir, "defaultproject.csproj");
+                        build3.DropDefaultProject(dropPathDir, dropPathFile);
 
-                        msbuildArgs.Add(@"D:\temp\defaultproj.csproj");
+                        //msbuildArgs.Add(@"D:\temp\defaultproj.csproj");
+                        msbuildArgs.Add(dropPathFile);
                         msbuildArgs.Add($"/p:CompileIncludes={currentDir}{Path.DirectorySeparatorChar}**");
                         msbuildArgs.Add($"/p:BaseOutputPath={currentDir}{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
                         msbuildArgs.Add($"/p:OutputPath={currentDir}{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
