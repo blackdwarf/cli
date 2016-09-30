@@ -12,6 +12,10 @@ namespace Microsoft.DotNet.Tools.Build
 {
     public class BuildCommand
     {
+        public int DropDefaultProject()
+        {
+            return 0;
+        }
         public static int Run(string[] args)
         {
             DebugHelper.HandleDebugSwitch(ref args);
@@ -50,18 +54,12 @@ namespace Microsoft.DotNet.Tools.Build
                 }
                 else if (Directory.GetFiles(Directory.GetCurrentDirectory(), "*.csproj").Length < 1)
                 {
-                    // do some magic to figure out if there is a project here and if not
-                    // are there cs files in here (I need to take care of fsproj files as well
-                    // and then do something else...
                     var currentDir = Directory.GetCurrentDirectory();
                     if (Directory.GetFiles(currentDir, "*.cs").Length  > 0)
                     {
-                        // Now we need to take out the project. For this pass, 
-                        // let's just point it to a location on disk
-                        // The important part are the paths
-                        // UPDATE: the below doesn't work because the paths are relative
+
                         msbuildArgs.Add(@"D:\temp\defaultproj.csproj");
-                        msbuildArgs.Add($"/p:CompileIncludes={currentDir}");
+                        msbuildArgs.Add($"/p:CompileIncludes={currentDir}{Path.DirectorySeparatorChar}**");
                         msbuildArgs.Add($"/p:BaseOutputPath={currentDir}{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
                         msbuildArgs.Add($"/p:OutputPath={currentDir}{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
                         msbuildArgs.Add($"/p:BaseIntermediateOutputPath={currentDir}{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}");
