@@ -1,7 +1,9 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.DotNet.Cli.CommandLine;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Tools.MSBuild;
@@ -45,6 +47,29 @@ namespace Microsoft.DotNet.Tools.Build
                 if (!string.IsNullOrEmpty(projectArgument.Value))
                 {
                     msbuildArgs.Add(projectArgument.Value);
+                }
+                else if (Directory.GetFiles(Directory.GetCurrentDirectory(), "*.csproj").Length < 1)
+                {
+                    // do some magic to figure out if there is a project here and if not
+                    // are there cs files in here (I need to take care of fsproj files as well
+                    // and then do something else...
+                    var currentDir = Directory.GetCurrentDirectory();
+                    if (Directory.GetFiles(currentDir, "*.cs").Length  > 0)
+                    {
+                        // Now we need to take out the project. For this pass, 
+                        // let's just point it to a location on disk
+                        // The important part are the paths
+                        // UPDATE: the below doesn't work because the paths are relative
+                        msbuildArgs.Add(@"D:\temp\defaultproj.csproj");
+                        msbuildArgs.Add($"/p:CompileIncludes={currentDir}");
+                        msbuildArgs.Add($"/p:BaseOutputPath={currentDir}{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
+                        msbuildArgs.Add($"/p:OutputPath={currentDir}{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
+                        msbuildArgs.Add($"/p:BaseIntermediateOutputPath={currentDir}{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}");
+                    }
+                    else if (Directory.GetFiles(currentDir, "*.fs").Length > 0)
+                    {
+                        // We have F# source files
+                    }
                 }
 
                 if (noIncrementalOption.HasValue())

@@ -1,0 +1,88 @@
+{
+  "version": "1.0.0-preview3-*",
+  "buildOptions": {
+    "emitEntryPoint": true,
+    "keyFile": "../../tools/Key.snk",
+    "embed": {
+      "include": [
+        "commands/dotnet-new/CSharp_Console.zip",
+        "commands/dotnet-new/CSharp_Lib.zip",
+        "commands/dotnet-new/CSharp_MSBuild.zip",
+        "commands/dotnet-new/CSharp_xunittest.zip",
+        "commands/dotnet-new/CSharp_Web.zip",
+        "commands/dotnet-new/CSharp_nunittest.zip",
+        "commands/dotnet-new/FSharp_Console.zip",
+        "commands/dotnet-new/FSharp_Lib.zip",
+        "commands/dotnet-build3/DefaultProject/defaultproject.csproj"
+      ]
+    },
+    "compile": {
+      "exclude": [
+        "commands/dotnet-new/CSharp_Console/**",
+        "commands/dotnet-new/FSharp_Console/**",
+        "commands/dotnet-new/CSharp_Web/**",
+        "commands/dotnet-new/CSharp_Lib/**",
+        "commands/dotnet-new/CSharp_MSBuild/**",
+        "commands/dotnet-new/FSharp_Lib/**",
+        "commands/dotnet-new/CSharp_xunittest/**",
+        "commands/dotnet-new/CSharp_nunittest/**",
+        "commands/dotnet-build3/DefaultProject/**"
+      ]
+    }
+  },
+  "dependencies": {
+    "Newtonsoft.Json": "9.0.1",
+    "System.Text.Encoding.CodePages": "4.0.1",
+    "System.Diagnostics.FileVersionInfo": "4.0.0",
+    "Microsoft.ApplicationInsights": "2.0.0",
+    "Microsoft.DotNet.ProjectModel": {
+      "target": "project"
+    },
+    "Microsoft.DotNet.Compiler.Common": {
+      "target": "project"
+    },
+    "Microsoft.DotNet.Cli.Utils": {
+      "target": "project"
+    },
+    "Microsoft.Extensions.Testing.Abstractions": {
+      "target": "project"
+    },
+    "Microsoft.DotNet.Configurer": {
+      "target": "project"
+    },
+    "Microsoft.DotNet.ProjectJsonMigration": {
+      "target": "project"
+    },
+    "Microsoft.DotNet.Tools.Test": {
+      "target": "project"
+    },
+    "Microsoft.NETCore.App": {
+      "type": "platform",
+      "version": "1.0.1"
+    },
+    "System.Diagnostics.TraceSource": "4.0.0",
+    "System.Diagnostics.TextWriterTraceListener": "4.0.0",
+    "System.Resources.Writer": "4.0.0",
+    "System.Runtime.Serialization.Primitives": "4.1.1",
+    "System.Private.DataContractSerialization": "4.1.1",
+    "System.Text.RegularExpressions": "4.1.0",
+    "Microsoft.Win32.Registry": {
+      "version": "4.0.0",
+      "exclude": "compile"
+    },
+
+    "Microsoft.Build": "15.1.319-preview5",
+
+    "Microsoft.DotNet.PlatformAbstractions": "1.0.1-beta-000933"
+  },
+  "frameworks": {
+    "netcoreapp1.0": {
+      "imports": [
+        "dnxcore50",
+        "netstandardapp1.5",
+        "portable-net45+win8",
+        "portable-net45+wp80+win8+wpa81+dnxcore50"
+      ]
+    }
+  }
+}
