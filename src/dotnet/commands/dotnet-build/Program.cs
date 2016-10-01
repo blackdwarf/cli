@@ -114,9 +114,13 @@ namespace Microsoft.DotNet.Tools.Build
                         var dropPathFile = Path.Combine(dropPathDir, "defaultproject.csproj");
                         build3.DropDefaultProject(dropPathDir, dropPathFile);
 
+                        // Get the default app name - use the current dir
+                        var appName = Path.GetFileName(currentDir.Trim(Path.DirectorySeparatorChar));
+
                         //msbuildArgs.Add(@"D:\temp\defaultproj.csproj");
                         msbuildArgs.Add(dropPathFile);
                         msbuildArgs.Add($"/p:CompileIncludes={currentDir}{Path.DirectorySeparatorChar}**");
+                        msbuildArgs.Add($"/p:AssemblyName={appName}");
                         msbuildArgs.Add($"/p:BaseOutputPath={currentDir}{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
                         msbuildArgs.Add($"/p:OutputPath={currentDir}{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
                         msbuildArgs.Add($"/p:BaseIntermediateOutputPath={currentDir}{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}");
