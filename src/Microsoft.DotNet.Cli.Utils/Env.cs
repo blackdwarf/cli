@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.Cli.Utils
 
         public static string GetHomeDirectory()
         {
-            return _environment.GetHomeDirectory();
+            return _environment.GetUserHomeDirectory();
         }
     }
 }

@@ -31,11 +31,12 @@ namespace Microsoft.DotNet.Tools.Build
 
         public int DropDefaultProject(string projectFilePath)
         {
-            PathUtility.EnsureDirectory(Path.GetDirectoryName(projectFilePath));
             if (File.Exists(projectFilePath))
             {
                 return 0;
             }
+
+            PathUtility.EnsureDirectory(Path.GetDirectoryName(projectFilePath));
 
             var thisAssembly = typeof(Build3Command).GetTypeInfo().Assembly;
             var resources = from resourceName in thisAssembly.GetManifestResourceNames()
@@ -104,6 +105,7 @@ namespace Microsoft.DotNet.Tools.Build
                 else if (!PathUtility.FilesExistInDirectory(Directory.GetCurrentDirectory(), "*.csproj"))
                 {
                     var currentDir = Directory.GetCurrentDirectory();
+                    var separator = Path.DirectorySeparatorChar;
                     if (PathUtility.FilesExistInDirectory(currentDir, "*.cs"))
                     {
                         var projectFilePath = Path.Combine(Env.GetHomeDirectory(), ".dotnet", "defaultproject.csproj");
@@ -113,11 +115,11 @@ namespace Microsoft.DotNet.Tools.Build
                         var appName = PathUtility.GetDirectoryName(currentDir);
 
                         msbuildArgs.Add(projectFilePath);
-                        msbuildArgs.Add($"/p:CompileIncludes={currentDir}{Path.DirectorySeparatorChar}**");
+                        msbuildArgs.Add($"/p:CompileIncludes={currentDir}{separator}**");
                         msbuildArgs.Add($"/p:AssemblyName={appName}");
-                        msbuildArgs.Add($"/p:BaseOutputPath={currentDir}{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
-                        msbuildArgs.Add($"/p:OutputPath={currentDir}{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
-                        msbuildArgs.Add($"/p:BaseIntermediateOutputPath={currentDir}{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}");
+                        msbuildArgs.Add($"/p:BaseOutputPath={currentDir}{separator}bin{separator}");
+                        msbuildArgs.Add($"/p:OutputPath={currentDir}{separator}bin{separator}");
+                        msbuildArgs.Add($"/p:BaseIntermediateOutputPath={currentDir}{separator}obj{separator}");
                     }
                     else if (Directory.GetFiles(currentDir, "*.fs").Length > 0)
                     {

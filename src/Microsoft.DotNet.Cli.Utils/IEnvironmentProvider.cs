@@ -15,6 +15,6 @@ namespace Microsoft.DotNet.Cli.Utils
         bool GetEnvironmentVariableAsBool(string name, bool defaultValue);
 
         string GetEnvironmentVariable(string name);
-        string GetHomeDirectory();
+        string GetUserHomeDirectory();
     }
 }
