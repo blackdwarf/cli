@@ -121,5 +121,12 @@ namespace Microsoft.DotNet.Cli.Utils
             }
         }
 
+        public string GetHomeDirectory()
+        {
+            var homeVar = (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows) ? "USERPROFILE" : "HOME";
+            return Environment.GetEnvironmentVariable(homeVar);
+
+        }
+
     }
 }

@@ -257,5 +257,13 @@ namespace Microsoft.DotNet.Tools.Common
 
             return Path.GetFullPath(path);
         }
+
+        public static bool FilesExistInDirectory(string directory, string glob)
+        {
+            if (String.IsNullOrEmpty(directory))
+                return false;
+
+            return (Directory.GetFiles(directory, glob).Length > 0) ? true : false;
+        }
     }
 }

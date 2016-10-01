@@ -29,10 +29,10 @@ namespace Microsoft.DotNet.Tools.Build
         }
 
 
-        public int DropDefaultProject(string dropPathDir, string dropPathFile)
+        public int DropDefaultProject(string projectFilePath)
         {
-            PathUtility.EnsureDirectory(dropPathDir);
-            if (File.Exists(dropPathFile))
+            PathUtility.EnsureDirectory(Path.GetDirectoryName(projectFilePath));
+            if (File.Exists(projectFilePath))
             {
                 return 0;
             }
@@ -51,7 +51,7 @@ namespace Microsoft.DotNet.Tools.Build
                     try
                     {
 
-                        using (var file = File.Create(dropPathFile))
+                        using (var file = File.Create(projectFilePath))
                         {
                             resource.CopyTo(file);
                         }
@@ -101,24 +101,18 @@ namespace Microsoft.DotNet.Tools.Build
                 {
                     msbuildArgs.Add(projectArgument.Value);
                 }
-                else if (Directory.GetFiles(Directory.GetCurrentDirectory(), "*.csproj").Length < 1)
+                else if (!PathUtility.FilesExistInDirectory(Directory.GetCurrentDirectory(), "*.csproj"))
                 {
                     var currentDir = Directory.GetCurrentDirectory();
-                    if (Directory.GetFiles(currentDir, "*.cs").Length  > 0)
+                    if (PathUtility.FilesExistInDirectory(currentDir, "*.cs"))
                     {
-                        // TODO: not good, this needs to go into the user folder somewhere since this way
-                        // we will escalate privilieges. 
-                        // TODO: can use getdirectoryname to get the first path, so...
-                        var dropPathDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "resources");
-                        // TODO: this needs to be configurable for fsproj and vbproj; for now just csproj
-                        var dropPathFile = Path.Combine(dropPathDir, "defaultproject.csproj");
-                        build3.DropDefaultProject(dropPathDir, dropPathFile);
+                        var projectFilePath = Path.Combine(Env.GetHomeDirectory(), ".dotnet", "defaultproject.csproj");
+                        build3.DropDefaultProject(projectFilePath);
 
                         // Get the default app name - use the current dir
-                        var appName = Path.GetFileName(currentDir.Trim(Path.DirectorySeparatorChar));
+                        var appName = PathUtility.GetDirectoryName(currentDir);
 
-                        //msbuildArgs.Add(@"D:\temp\defaultproj.csproj");
-                        msbuildArgs.Add(dropPathFile);
+                        msbuildArgs.Add(projectFilePath);
                         msbuildArgs.Add($"/p:CompileIncludes={currentDir}{Path.DirectorySeparatorChar}**");
                         msbuildArgs.Add($"/p:AssemblyName={appName}");
                         msbuildArgs.Add($"/p:BaseOutputPath={currentDir}{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
