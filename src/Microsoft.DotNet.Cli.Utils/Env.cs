@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.Cli.Utils
             return _environment.GetEnvironmentVariableAsBool(name, defaultValue);
         }
 
-        public static string GetHomeDirectory()
+        public static string GetUserHomeDirectory()
         {
             return _environment.GetUserHomeDirectory();
         }

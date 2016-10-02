@@ -13,7 +13,8 @@
         "commands/dotnet-new/CSharp_nunittest.zip",
         "commands/dotnet-new/FSharp_Console.zip",
         "commands/dotnet-new/FSharp_Lib.zip",
-        "commands/dotnet-build3/DefaultProject/defaultproject.csproj"
+        "commands/dotnet-build3/DefaultProject/defaultproject.csproj",
+        "commands/dotnet-build3/DefaultProject/defaultproject.fsproj"
       ]
     },
     "compile": {
