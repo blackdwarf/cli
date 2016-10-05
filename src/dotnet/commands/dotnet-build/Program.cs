@@ -56,6 +56,12 @@ namespace Microsoft.DotNet.Tools.Build
                 else if (projectless.IsProjectlessWorkspace())
                 {
                     projectless.PackageArgs(ref msbuildArgs);
+                    // Here we already have the default project...I do wonder, would this simple thing work
+                    var restoreArgs = new List<string>() {
+                        "/t:Restore"
+                    };
+                    restoreArgs.AddRange(msbuildArgs);
+                    var restoreOp = new MSBuildForwardingApp(restoreArgs).Execute();
                 }
 
                 if (noIncrementalOption.HasValue())
