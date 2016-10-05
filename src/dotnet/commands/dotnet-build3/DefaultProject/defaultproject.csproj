@@ -16,7 +16,7 @@
       <Version>1.0.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Sdk">
-      <Version>0.0</Version>
+      <Version>1.0.0-alpha-20161005-3</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

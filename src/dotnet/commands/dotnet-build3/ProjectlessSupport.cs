@@ -73,11 +73,12 @@ namespace Microsoft.DotNet.Tools.Build3
 
             char separator = Path.DirectorySeparatorChar;
             msbuildArgs.Add(projectFilePath);
-            msbuildArgs.Add($"/p:CompileIncludes={_currentDirectory}{separator}**");
+            msbuildArgs.Add($"/p:IncludesPath={_currentDirectory}{separator}**");
             msbuildArgs.Add($"/p:AssemblyName={_appName}");
             msbuildArgs.Add($"/p:BaseOutputPath={_currentDirectory}{separator}bin{separator}");
             msbuildArgs.Add($"/p:OutputPath={_currentDirectory}{separator}bin{separator}");
             msbuildArgs.Add($"/p:BaseIntermediateOutputPath={_currentDirectory}{separator}obj{separator}");
+            msbuildArgs.Add("/verbosity:Quiet");
 
         }
 
