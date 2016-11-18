@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Tools.Common;
 
-namespace Microsoft.DotNet.Tools.Build3
+namespace Microsoft.DotNet.Tools.Build
 {
     public class ProjectlessSupport
     {
@@ -105,7 +105,7 @@ namespace Microsoft.DotNet.Tools.Build3
 
             PathUtility.EnsureDirectory(Path.GetDirectoryName(projectFilePath));
 
-            var thisAssembly = typeof(Build3Command).GetTypeInfo().Assembly;
+            var thisAssembly = typeof(BuildCommand).GetTypeInfo().Assembly;
             var resources = from resourceName in thisAssembly.GetManifestResourceNames()
                             where resourceName.Contains("DefaultProject")
                             select resourceName;

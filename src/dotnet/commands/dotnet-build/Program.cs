@@ -43,7 +43,6 @@ namespace Microsoft.DotNet.Tools.Build
             CommandOption noIncrementalOption = app.Option("--no-incremental", "Set this flag to turn off incremental build", CommandOptionType.NoValue);
             CommandOption noDependenciesOption = app.Option("--no-dependencies", "Set this flag to ignore project to project references and only build the root project", CommandOptionType.NoValue);
             CommandOption verbosityOption = MSBuildForwardingApp.AddVerbosityOption(app);
-            var build3 = new Build3Command();
             var projectless = new ProjectlessSupport();
             app.OnExecute(() =>
             {
