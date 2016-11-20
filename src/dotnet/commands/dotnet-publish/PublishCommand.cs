@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Tools.MSBuild;
 using Microsoft.DotNet.Tools.Restore;
+// This means that I have to move it out to a separate project
+using Microsoft.DotNet.Tools.Build;
 
 namespace Microsoft.DotNet.Tools.Publish
 {
@@ -26,11 +28,22 @@ namespace Microsoft.DotNet.Tools.Publish
 
         public int Execute()
         {
+            var projectless = new ProjectlessSupport();
             List<string> msbuildArgs = new List<string>();
 
             if (!string.IsNullOrEmpty(ProjectPath))
             {
                 msbuildArgs.Add(ProjectPath);
+            }
+            else if (projectless.IsProjectlessWorkspace())
+            {
+                projectless.PackageArgs(ref msbuildArgs);
+                // Here we already have the default project...I do wonder, would this simple thing work
+                var restoreArgs = new List<string>() {
+                    "/t:Restore"
+                };
+                restoreArgs.AddRange(msbuildArgs);
+                var restoreOp = new MSBuildForwardingApp(restoreArgs).Execute();
             }
 
             msbuildArgs.Add("/t:Publish");
