@@ -8,6 +8,7 @@ using System.Linq;
 using Microsoft.Build.Execution;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Tools.MSBuild;
+using Microsoft.DotNet.Tools.Build;
 
 namespace Microsoft.DotNet.Tools.Run
 {
@@ -17,6 +18,8 @@ namespace Microsoft.DotNet.Tools.Run
         public string Framework { get; set; }
         public string Project { get; set; }
         public IReadOnlyList<string> Args { get; set; }
+        private ProjectlessSupport _projectless;
+        private bool _isProjectless = false;
 
         private List<string> _args;
 
@@ -41,10 +44,25 @@ namespace Microsoft.DotNet.Tools.Run
         {
             List<string> buildArgs = new List<string>();
  
-            buildArgs.Add(Project); 
- 
+            //buildArgs.Add(Project); 
+            if (_isProjectless)
+            {
+                _projectless.PackageArgs(ref buildArgs);
+                var restoreArgs = new List<string>() {
+                    "/t:Restore",
+                    "/verbosity:quiet"  
+                };
+                restoreArgs.AddRange(buildArgs);
+                var restoreOp = new MSBuildForwardingApp(restoreArgs).Execute();
+            }
+            else
+            {
+                buildArgs.Add(Project);
+            }
+            
             buildArgs.Add("/nologo");
             buildArgs.Add("/verbosity:quiet");
+            Console.WriteLine($"DEBUG: buildArgs: {string.Join(",", buildArgs)}");
 
             if (!string.IsNullOrWhiteSpace(Configuration))
             {
@@ -55,7 +73,7 @@ namespace Microsoft.DotNet.Tools.Run
             {
                 buildArgs.Add($"/p:TargetFramework={Framework}");
             }
-
+            
             var buildResult = new MSBuildForwardingApp(buildArgs).Execute();
 
             if (buildResult != 0)
@@ -81,10 +99,15 @@ namespace Microsoft.DotNet.Tools.Run
             {
                 globalProperties.Add("TargetFramework", Framework);
             }
+            globalProperties.Add("BaseIntermidiateOutputPath", Directory.GetCurrentDirectory() + "\\obj");
 
             ProjectInstance projectInstance = new ProjectInstance(Project, globalProperties, null);
+            Console.WriteLine($"DEBUG: project instance is: {projectInstance}");
+            Console.WriteLine($"DEBUG: fill path is {projectInstance.FullPath}");
+            Console.WriteLine($"DEBUG: directory path is {projectInstance.Directory}");
 
             string runProgram = projectInstance.GetPropertyValue("RunCommand");
+            Console.WriteLine($"DEBUG: Run Program is: {runProgram}");
             if (string.IsNullOrEmpty(runProgram))
             {
                 string outputType = projectInstance.GetPropertyValue("OutputType");
@@ -112,6 +135,7 @@ namespace Microsoft.DotNet.Tools.Run
 
         private void Initialize()
         {
+            _projectless = new ProjectlessSupport();
             if (string.IsNullOrWhiteSpace(Project))
             {
                 string directory = Directory.GetCurrentDirectory();
@@ -119,17 +143,29 @@ namespace Microsoft.DotNet.Tools.Run
 
                 if (projectFiles.Length == 0)
                 {
+                    if (_projectless.IsProjectlessWorkspace())
+                    {
+                        var blah = _projectless.DropDefaultProject();
+                        Project = blah;
+                        _isProjectless = true;
+                    }
+                    else
+                    {
                     throw new InvalidOperationException(
                         $"Couldn't find a project to run. Ensure a project exists in {directory}." + Environment.NewLine +
                         "Or pass the path to the project using --project");
+                    }
+
                 }
                 else if (projectFiles.Length > 1)
                 {
                     throw new InvalidOperationException(
                         $"Specify which project file to use because this '{directory}' contains more than one project file.");
                 }
-
-                Project = projectFiles[0];
+                else
+                {
+                    Project = projectFiles[0];
+                }
             }
 
             if (Args == null)

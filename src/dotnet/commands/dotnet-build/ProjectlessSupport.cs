@@ -14,6 +14,9 @@ namespace Microsoft.DotNet.Tools.Build
 
         private readonly string _currentDirectory;
         private string _appName;
+        // TODO: this should be set at some point to point to the default project; after all, we know what it is, right?
+        // (it is a well-known property)
+        public string DefaultProject { get; set; }
 
         public ProjectlessSupport() : this(Directory.GetCurrentDirectory()) { }
 
@@ -68,7 +71,6 @@ namespace Microsoft.DotNet.Tools.Build
             }
 
             var projectFilePath = Path.Combine(Env.GetUserHomeDirectory(), ".dotnet", projectFileName);
-
             DropDefaultProject(projectFilePath, projectFileName);
 
             char separator = Path.DirectorySeparatorChar;
@@ -96,12 +98,43 @@ namespace Microsoft.DotNet.Tools.Build
             return parts[parts.Length - 2] + "." + parts[parts.Length - 1];
         }
 
+        // TODO: refactor this code, it is ugly and not well...
+        private string GetDefaultProjectLocation()
+        {
+            var projectFileName = "defaultproject";
+            if (IsCsharpWorkspace())
+            {
+                projectFileName += ".csproj";
+            }
+            else if (IsFsharpWorkspace())
+            {
+                // here is where the F# stuff would come along
+                projectFileName += ".fsproj";
+            }
+            else if (IsVbNetWorkspace())
+            {
+                projectFileName += ".vbproj";
+            }
 
-        private int DropDefaultProject(string projectFilePath, string projectFileName)
+            var projectFilePath = Path.Combine(Env.GetUserHomeDirectory(), ".dotnet", projectFileName);
+            return projectFilePath;
+        }
+
+        public string DropDefaultProject()
+        {
+            var pfp = GetDefaultProjectLocation();
+            var pfn = Path.GetFileName(pfp);
+            return DropDefaultProject(pfp, pfn);
+        }
+
+
+        // TODO: refactor this to only take the path, the name can be done differently
+        private string DropDefaultProject(string projectFilePath, string projectFileName)
         {
             if (File.Exists(projectFilePath))
             {
-                return 0;
+                //return 0;
+                return projectFilePath;
             }
 
             PathUtility.EnsureDirectory(Path.GetDirectoryName(projectFilePath));
@@ -129,12 +162,12 @@ namespace Microsoft.DotNet.Tools.Build
                     } catch (IOException ex)
                     {
                         Reporter.Error.WriteLine(ex.Message);
-                        return 1;
+                        return "";
                     }
                 }
             }
 
-            return 0;
+            return projectFilePath;
         }
 
     }
