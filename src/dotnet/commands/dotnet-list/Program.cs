@@ -18,6 +18,7 @@ namespace Microsoft.DotNet.Tools.List
             {
                 ListProjectsInSolutionCommand.Create,
                 ListProjectToProjectReferencesCommand.Create,
+                ListProjectsInSolutionCommand.Create
             };
 
         public static int Run(string[] args)
