@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Microsoft.DotNet.Cli;
 using Microsoft.DotNet.Tools.List.ProjectToProjectReferences;
 using Microsoft.DotNet.Tools.List.ProjectsInSolution;
+using Microsoft.DotNet.Tools.List.ListInstalledRuntimes;
 
 namespace Microsoft.DotNet.Tools.List
 {
@@ -18,7 +19,7 @@ namespace Microsoft.DotNet.Tools.List
             {
                 ListProjectsInSolutionCommand.Create,
                 ListProjectToProjectReferencesCommand.Create,
-                ListProjectsInSolutionCommand.Create
+                ListInstalledRuntimesCommand.Create
             };
 
         public static int Run(string[] args)
