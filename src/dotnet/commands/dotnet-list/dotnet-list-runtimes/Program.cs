@@ -31,16 +31,17 @@ namespace Microsoft.DotNet.Tools.List.ListInstalledRuntimes
             var sharedFxPath = $"{Path.GetDirectoryName(muxer.MuxerPath)}{separator}shared{separator}Microsoft.NETCore.App";
             if (Directory.Exists(sharedFxPath))
             {
-                Reporter.Output.WriteLine($"Install location: {sharedFxPath}");
-                Reporter.Output.WriteLine("Installed versions:");
+                Reporter.Output.WriteLine($"Microsoft.NETCore.App @ {sharedFxPath}:");
                 foreach (var dir in Directory.EnumerateDirectories(sharedFxPath))
                 {
-                    Reporter.Output.WriteLine($"  - v{Path.GetFileName(dir)}");
+                    var version = Path.GetFileName(dir);
+                    var train = (int.Parse(version.Split('.')[1]) > 0 ? "Current" : "LTS");
+                    Reporter.Output.WriteLine($"  - v{version} ({train})");
                 }
             }
             else
             {
-                Reporter.Error.WriteLine("You don't seem to have any shared frameworks installed.");
+                Reporter.Error.WriteLine(LocalizableStrings.NoRuntimesError);
             }
             
             return 0;
