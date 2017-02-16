@@ -2,14 +2,23 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.DotNet.ProjectModel;
-using Microsoft.DotNet.ProjectModel.Graph;
+using Microsoft.DotNet.Tools.Common;
 using NuGet.Packaging;
+using NuGet.ProjectModel;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
     public class PackagedCommandSpecFactory : IPackagedCommandSpecFactory
     {
+        private const string PackagedCommandSpecFactoryName = "packagedcommandspecfactory";
+
+        private Action<string, IList<string>> _addAdditionalArguments;
+
+        internal PackagedCommandSpecFactory(Action<string, IList<string>> addAdditionalArguments = null)
+        {
+            _addAdditionalArguments = addAdditionalArguments;
+        }
+
         public CommandSpec CreateCommandSpecFromLibrary(
             LockFileTargetLibrary toolLibrary,
             string commandName,
@@ -17,14 +26,25 @@ namespace Microsoft.DotNet.Cli.Utils
             IEnumerable<string> allowedExtensions,
             string nugetPackagesRoot,
             CommandResolutionStrategy commandResolutionStrategy,
-            string depsFilePath)
+            string depsFilePath,
+            string runtimeConfigPath)
         {
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.AttemptingToFindCommand,
+                PackagedCommandSpecFactoryName,
+                commandName,
+                toolLibrary.Name));
 
             var toolAssembly = toolLibrary?.RuntimeAssemblies
                     .FirstOrDefault(r => Path.GetFileNameWithoutExtension(r.Path) == commandName);
 
             if (toolAssembly == null)
             {
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.FailedToFindToolAssembly,
+                    PackagedCommandSpecFactoryName,
+                    commandName));
+
                 return null;
             }
             
@@ -32,84 +52,89 @@ namespace Microsoft.DotNet.Cli.Utils
 
             if (!File.Exists(commandPath))
             {
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.FailedToFindCommandPath,
+                    PackagedCommandSpecFactoryName,
+                    commandPath));
+
                 return null;
             }
 
-            var isPortable = IsPortableApp(commandPath);
-
-            return CreateCommandSpecWrappingWithCorehostIfDll(
+            return CreateCommandSpecWrappingWithMuxerIfDll(
                 commandPath, 
                 commandArguments, 
                 depsFilePath, 
                 commandResolutionStrategy,
                 nugetPackagesRoot,
-                isPortable);
+                runtimeConfigPath);
         }
 
-        private string GetCommandFilePath(string nugetPackagesRoot, LockFileTargetLibrary toolLibrary, LockFileItem runtimeAssembly)
+        private string GetCommandFilePath(
+            string nugetPackagesRoot,
+            LockFileTargetLibrary toolLibrary,
+            LockFileItem runtimeAssembly)
         {
             var packageDirectory = new VersionFolderPathResolver(nugetPackagesRoot)
                 .GetInstallPath(toolLibrary.Name, toolLibrary.Version);
 
-            var filePath = Path.Combine(packageDirectory, runtimeAssembly.Path);
+            var filePath = Path.Combine(
+                packageDirectory,
+                PathUtility.GetPathWithDirectorySeparator(runtimeAssembly.Path));
 
             return filePath;
         }
 
-        private CommandSpec CreateCommandSpecWrappingWithCorehostIfDll(
+        private CommandSpec CreateCommandSpecWrappingWithMuxerIfDll(
             string commandPath, 
             IEnumerable<string> commandArguments, 
             string depsFilePath,
             CommandResolutionStrategy commandResolutionStrategy,
             string nugetPackagesRoot,
-            bool isPortable)
+            string runtimeConfigPath)
         {
             var commandExtension = Path.GetExtension(commandPath);
 
             if (commandExtension == FileNameSuffixes.DotNet.DynamicLib)
             {
-                return CreatePackageCommandSpecUsingCorehost(
+                return CreatePackageCommandSpecUsingMuxer(
                     commandPath, 
                     commandArguments, 
                     depsFilePath, 
                     commandResolutionStrategy,
                     nugetPackagesRoot,
-                    isPortable);
+                    runtimeConfigPath);
             }
             
             return CreateCommandSpec(commandPath, commandArguments, commandResolutionStrategy);
         }
 
-        private CommandSpec CreatePackageCommandSpecUsingCorehost(
+        private CommandSpec CreatePackageCommandSpecUsingMuxer(
             string commandPath, 
             IEnumerable<string> commandArguments, 
             string depsFilePath,
             CommandResolutionStrategy commandResolutionStrategy,
             string nugetPackagesRoot,
-            bool isPortable)
+            string runtimeConfigPath)
         {
             var host = string.Empty;
             var arguments = new List<string>();
 
-            if (isPortable)
-            {
-                var muxer = new Muxer();
+            var muxer = new Muxer();
 
-                host = muxer.MuxerPath;
-                if (host == null)
-                {
-                    throw new Exception("Unable to locate dotnet multiplexer");
-                }
-
-                arguments.Add("exec");
-            }
-            else
+            host = muxer.MuxerPath;
+            if (host == null)
             {
-                host = CoreHost.HostExePath;
+                throw new Exception(LocalizableStrings.UnableToLocateDotnetMultiplexer);
             }
 
-            arguments.Add(commandPath);
+            arguments.Add("exec");
 
+            if (runtimeConfigPath != null)
+            {
+                arguments.Add("--runtimeconfig");
+                arguments.Add(runtimeConfigPath);
+            }
+            
             if (depsFilePath != null)
             {
                 arguments.Add("--depsfile");
@@ -119,6 +144,12 @@ namespace Microsoft.DotNet.Cli.Utils
             arguments.Add("--additionalprobingpath");
             arguments.Add(nugetPackagesRoot);
 
+            if(_addAdditionalArguments != null)
+            {
+                _addAdditionalArguments(commandPath, arguments);
+            }
+
+            arguments.Add(commandPath);
             arguments.AddRange(commandArguments);
 
             return CreateCommandSpec(host, arguments, commandResolutionStrategy);
@@ -132,23 +163,6 @@ namespace Microsoft.DotNet.Cli.Utils
             var escapedArgs = ArgumentEscaper.EscapeAndConcatenateArgArrayForProcessStart(commandArguments);
 
             return new CommandSpec(commandPath, escapedArgs, commandResolutionStrategy);
-        }
-
-        private bool IsPortableApp(string commandPath)
-        {
-            var commandDir = Path.GetDirectoryName(commandPath);
-
-            var runtimeConfigPath = Directory.EnumerateFiles(commandDir)
-                .FirstOrDefault(x => x.EndsWith("runtimeconfig.json"));
-
-            if (runtimeConfigPath == null)
-            {
-                return false;
-            }
-
-            var runtimeConfig = new RuntimeConfig(runtimeConfigPath);
-
-            return runtimeConfig.IsPortable;
         }
     }
 }

@@ -2,14 +2,14 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.Cli.Utils;
+using NuGet.Frameworks;
 
 namespace Microsoft.DotNet.Tools.DependencyInvoker
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             DebugHelper.HandleDebugSwitch(ref args);
 
@@ -21,63 +21,57 @@ namespace Microsoft.DotNet.Tools.DependencyInvoker
             {
                 Console.WriteLine("A command name must be provided");
                 
-                return;
+                return 1;
             }
-            
-            var projectContexts = 
-                CreateProjectContexts(dotnetParams.ProjectPath)
-                    .Where(p => dotnetParams.Framework == null ||
-                                dotnetParams.Framework.GetShortFolderName()
-                                .Equals(p.TargetFramework.GetShortFolderName()));
-            
+
             var commandFactory =
                 new ProjectDependenciesCommandFactory(
                     dotnetParams.Framework,
                     dotnetParams.Config,
                     dotnetParams.Output,
                     dotnetParams.BuildBasePath,
-                    projectContexts.First().ProjectDirectory);
-                    
-            foreach (var projectContext in projectContexts)
-            {
-                Console.WriteLine($"Invoking '{dotnetParams.Command}' for '{projectContext.TargetFramework}'.");
+                    dotnetParams.ProjectPath);
 
-                try
-                {
-                    var exitCode = commandFactory.Create(
-                            $"dotnet-{dotnetParams.Command}",
-                            dotnetParams.RemainingArguments,
-                            projectContext.TargetFramework,
-                            dotnetParams.Config)
-                        .ForwardStdErr()
-                        .ForwardStdOut()
-                        .Execute()
-                        .ExitCode;
-                    
-                    Console.WriteLine($"Command returned {exitCode}");
-                }
-                catch (CommandUnknownException)
-                {
-                    Console.WriteLine($"Command not found");
-                }
-            }
+            var result = InvokeDependencyToolForMSBuild(commandFactory, dotnetParams);
+
+            return result;
         }
 
-        private static IEnumerable<ProjectContext> CreateProjectContexts(string projectPath = null)
+        private static int InvokeDependencyToolForMSBuild(
+            ProjectDependenciesCommandFactory commandFactory,
+            DotnetBaseParams dotnetParams)
         {
-            projectPath = projectPath ?? Directory.GetCurrentDirectory();
+            Console.WriteLine($"Invoking '{dotnetParams.Command}' for '{dotnetParams.Framework.GetShortFolderName()}'.");
 
-            if (!projectPath.EndsWith(Project.FileName))
+            return InvokeDependencyTool(commandFactory, dotnetParams, dotnetParams.Framework);
+        }
+
+        private static int InvokeDependencyTool(
+            ProjectDependenciesCommandFactory commandFactory,
+            DotnetBaseParams dotnetParams,
+            NuGetFramework framework)
+        {
+            try
             {
-                projectPath = Path.Combine(projectPath, Project.FileName);
+                var exitCode = commandFactory.Create(
+                        $"dotnet-{dotnetParams.Command}",
+                        dotnetParams.RemainingArguments,
+                        framework,
+                        dotnetParams.Config)
+                    .ForwardStdErr()
+                    .ForwardStdOut()
+                    .Execute()
+                    .ExitCode;
+
+                Console.WriteLine($"Command returned {exitCode}");
+            }
+            catch (CommandUnknownException)
+            {
+                Console.WriteLine($"Command not found");
+                return 1;
             }
 
-            if (!File.Exists(projectPath))
-            {
-                throw new InvalidOperationException($"{projectPath} does not exist.");
-            }
-
-            return ProjectContext.CreateContextForEachFramework(projectPath);
+            return 0;
         }
     }
 }

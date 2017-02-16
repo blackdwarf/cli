@@ -2,17 +2,19 @@
 
 namespace Microsoft.DotNet.Cli.Utils
 {
-    public class CommandUnknownException : Exception
+    public class CommandUnknownException : GracefulException
     {
-        public CommandUnknownException()
+        public CommandUnknownException(string commandName) : base(string.Format(
+            LocalizableStrings.NoExecutableFoundMatchingCommand,
+            commandName))
         {
         }
 
-        public CommandUnknownException(string commandName) : base($"No executable found matching command \"{commandName}\"")
-        {
-        }
-
-        public CommandUnknownException(string commandName, Exception innerException) : base($"No executable found matching command \"{commandName}\"", innerException)
+        public CommandUnknownException(string commandName, Exception innerException) : base(
+            string.Format(
+                LocalizableStrings.NoExecutableFoundMatchingCommand,
+                commandName),
+            innerException)
         {
         }
     }

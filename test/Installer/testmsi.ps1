@@ -2,7 +2,8 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 param(
-    [Parameter(Mandatory=$true)][string]$inputMsi
+    [string]$InputMsi,
+    [string]$DotnetDir
 )
 
 . "$PSScriptRoot\..\..\scripts\common\_common.ps1"
@@ -35,15 +36,14 @@ if(!(Test-Path $inputMsi))
 }
 
 $testName = "Microsoft.DotNet.Cli.Msi.Tests"
-$testDir="$PSScriptRoot\$testName"
+$testProj="$PSScriptRoot\$testName\$testName.csproj"
 $testBin="$RepoRoot\artifacts\tests\$testName"
 
-pushd "$Stage2Dir"
+pushd "$DotnetDir"
 
 try {
     .\dotnet restore `
-        $testDir `
-        -f https://www.myget.org/F/dotnet-buildtools/api/v3/index.json | Out-Host
+        $testProj | Out-Host
 
     if($LastExitCode -ne 0)
     {
@@ -53,7 +53,7 @@ try {
     .\dotnet publish `
         --framework net46 `
         --output $testBin `
-        $testDir | Out-Host
+        $testProj | Out-Host
 
     if($LastExitCode -ne 0)
     {

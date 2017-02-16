@@ -1,10 +1,5 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.DotNet.ProjectModel;
-using Microsoft.DotNet.ProjectModel.Graph;
-using Microsoft.DotNet.ProjectModel.Compilation;
+using NuGet.ProjectModel;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
@@ -17,7 +12,8 @@ namespace Microsoft.DotNet.Cli.Utils
             IEnumerable<string> allowedExtensions,
             string nugetPackagesRoot,
             CommandResolutionStrategy commandResolutionStrategy,
-            string depsFilePath);
+            string depsFilePath,
+            string runtimeConfigPath);
         
     }
 }

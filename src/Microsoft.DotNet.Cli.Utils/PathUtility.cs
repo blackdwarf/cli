@@ -2,8 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
-using Microsoft.Extensions.PlatformAbstractions;
+using System.Linq;
+using Microsoft.DotNet.Cli.Utils;
+using Microsoft.DotNet.PlatformAbstractions;
 
 namespace Microsoft.DotNet.Tools.Common
 {
@@ -56,13 +59,59 @@ namespace Microsoft.DotNet.Tools.Common
             return path + trailingCharacter;
         }
 
-        public static void EnsureParentDirectory(string filePath)
+        public static string EnsureNoTrailingDirectorySeparator(string path)
+        {
+            if (!string.IsNullOrEmpty(path))
+            {
+                char lastChar = path[path.Length - 1];
+                if (lastChar == Path.DirectorySeparatorChar)
+                {
+                    path = path.Substring(0, path.Length - 1);
+                }
+            }
+
+            return path;
+        }
+
+        public static void EnsureParentDirectoryExists(string filePath)
         {
             string directory = Path.GetDirectoryName(filePath);
-            if (!Directory.Exists(directory))
+
+            EnsureDirectoryExists(directory);
+        }
+        
+        public static void EnsureDirectoryExists(string directoryPath)
+        {
+            if (!Directory.Exists(directoryPath))
             {
-                Directory.CreateDirectory(directory);
+                Directory.CreateDirectory(directoryPath);
             }
+        }
+
+        public static bool TryDeleteDirectory(string directoryPath)
+        {
+            try
+            {
+                Directory.Delete(directoryPath, true);
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns childItem relative to directory, with Path.DirectorySeparatorChar as separator
+        /// </summary>
+        public static string GetRelativePath(DirectoryInfo directory, FileSystemInfo childItem)
+        {
+            var path1 = EnsureTrailingSlash(directory.FullName);
+
+            var path2 = childItem.FullName;
+
+            return GetRelativePath(path1, path2, Path.DirectorySeparatorChar, true);
         }
 
         /// <summary>
@@ -98,7 +147,7 @@ namespace Microsoft.DotNet.Tools.Common
             }
 
             StringComparison compare;
-            if (PlatformServices.Default.Runtime.OperatingSystemPlatform == Platform.Windows)
+            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
             {
                 compare = StringComparison.OrdinalIgnoreCase;
                 // check if paths are on the same volume
@@ -216,12 +265,46 @@ namespace Microsoft.DotNet.Tools.Common
         {
             var comparison = StringComparison.Ordinal;
 
-            if (PlatformServices.Default.Runtime.OperatingSystemPlatform == Platform.Windows)
+            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
             {
                 comparison = StringComparison.OrdinalIgnoreCase;
             }
 
             return Path.GetExtension(filePath).Equals(extension, comparison);
+        }
+
+        /// <summary>
+        /// Gets the fully-qualified path without failing if the
+        /// path is empty.
+        /// </summary>
+        public static string GetFullPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return path;
+            }
+
+            return Path.GetFullPath(path);
+        }
+
+        public static void EnsureAllPathsExist(List<string> paths, string pathDoesNotExistLocalizedFormatString)
+        {
+            var notExisting = new List<string>();
+            foreach (var p in paths)
+            {
+                if (!File.Exists(p))
+                {
+                    notExisting.Add(p);
+                }
+            }
+
+            if (notExisting.Count > 0)
+            {
+                throw new GracefulException(
+                    string.Join(
+                        Environment.NewLine,
+                        notExisting.Select((p) => string.Format(pathDoesNotExistLocalizedFormatString, p))));
+            }
         }
     }
 }

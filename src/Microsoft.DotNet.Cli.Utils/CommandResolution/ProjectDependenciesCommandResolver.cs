@@ -1,17 +1,18 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.DotNet.ProjectModel;
-using Microsoft.DotNet.ProjectModel.Graph;
-using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.DotNet.Tools.Common;
 using NuGet.Frameworks;
+using NuGet.ProjectModel;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
     public class ProjectDependenciesCommandResolver : ICommandResolver
     {
-        private static readonly CommandResolutionStrategy s_commandResolutionStrategy = 
+        private const string ProjectDependenciesCommandResolverName = "projectdependenciescommandresolver";
+
+        private static readonly CommandResolutionStrategy s_commandResolutionStrategy =
             CommandResolutionStrategy.ProjectDependenciesPackage;
 
         private readonly IEnvironmentProvider _environment;
@@ -37,11 +38,20 @@ namespace Microsoft.DotNet.Cli.Utils
 
         public CommandSpec Resolve(CommandResolverArguments commandResolverArguments)
         {
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.AttemptingToResolve,
+                ProjectDependenciesCommandResolverName,
+                commandResolverArguments.CommandName));
+
             if (commandResolverArguments.Framework == null
                 || commandResolverArguments.ProjectDirectory == null
                 || commandResolverArguments.Configuration == null
                 || commandResolverArguments.CommandName == null)
             {
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.InvalidCommandResolverArguments,
+                    ProjectDependenciesCommandResolverName));
+
                 return null;
             }
 
@@ -66,83 +76,87 @@ namespace Microsoft.DotNet.Cli.Utils
         {
             var allowedExtensions = GetAllowedCommandExtensionsFromEnvironment(_environment);
 
-            var projectContext = GetProjectContextFromDirectory(
+            var projectFactory = new ProjectFactory(_environment);
+            var project = projectFactory.GetProject(
                 projectDirectory,
-                framework);
+                framework,
+                configuration,
+                buildBasePath,
+                outputPath);
 
-            if (projectContext == null)
+            if (project == null)
             {
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.DidNotFindAMatchingProject,
+                    ProjectDependenciesCommandResolverName,
+                    projectDirectory));
                 return null;
             }
 
-            var depsFilePath =
-                projectContext.GetOutputPaths(configuration, buildBasePath, outputPath).RuntimeFiles.DepsJson;
+            var depsFilePath = project.DepsJsonPath;
 
-            var toolLibrary = GetToolLibraryForContext(projectContext, commandName);
+            if (!File.Exists(depsFilePath))
+            {
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.DoesNotExist,
+                    ProjectDependenciesCommandResolverName,
+                    depsFilePath));
+                return null;
+            }
 
-            return ResolveFromDependencyLibrary(
-                toolLibrary,
-                depsFilePath,
-                commandName,
-                allowedExtensions,
-                commandArguments,
-                projectContext);
-        }
+            var runtimeConfigPath = project.RuntimeConfigJsonPath;
 
-        private CommandSpec ResolveFromDependencyLibrary(
-            LockFileTargetLibrary toolLibrary,
-            string depsFilePath,
-            string commandName,
-            IEnumerable<string> allowedExtensions,
-            IEnumerable<string> commandArguments,
-            ProjectContext projectContext)
-        {
-            return _packagedCommandSpecFactory.CreateCommandSpecFromLibrary(
+            if (!File.Exists(runtimeConfigPath))
+            {
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.DoesNotExist,
+                    ProjectDependenciesCommandResolverName,
+                    runtimeConfigPath));
+                return null;
+            }
+
+            var lockFile = project.GetLockFile();
+            var toolLibrary = GetToolLibraryForContext(lockFile, commandName, framework);
+            var normalizedNugetPackagesRoot =
+                PathUtility.EnsureNoTrailingDirectorySeparator(lockFile.PackageFolders.First().Path);
+
+            var commandSpec = _packagedCommandSpecFactory.CreateCommandSpecFromLibrary(
                         toolLibrary,
                         commandName,
                         commandArguments,
                         allowedExtensions,
-                        projectContext.PackagesDirectory,
+                        normalizedNugetPackagesRoot,
                         s_commandResolutionStrategy,
-                        depsFilePath);
+                        depsFilePath,
+                        runtimeConfigPath);
+
+            commandSpec?.AddEnvironmentVariablesFromProject(project);
+
+            return commandSpec;
         }
 
         private LockFileTargetLibrary GetToolLibraryForContext(
-            ProjectContext projectContext, string commandName)
+            LockFile lockFile, string commandName, NuGetFramework targetFramework)
         {
-            var toolLibrary = projectContext.LockFile.Targets
+            var toolLibraries = lockFile.Targets
                 .FirstOrDefault(t => t.TargetFramework.GetShortFolderName()
-                                      .Equals(projectContext.TargetFramework.GetShortFolderName()))
-                ?.Libraries.FirstOrDefault(l => l.Name == commandName);
+                                      .Equals(targetFramework.GetShortFolderName()))
+                ?.Libraries.Where(l => l.Name == commandName ||
+                    l.RuntimeAssemblies.Any(r => Path.GetFileNameWithoutExtension(r.Path) == commandName)).ToList();
 
-            return toolLibrary;
-        }
-
-        private ProjectContext GetProjectContextFromDirectory(string directory, NuGetFramework framework)
-        {
-            if (directory == null || framework == null)
+            if (toolLibraries?.Count() > 1)
             {
-                return null;
+                throw new InvalidOperationException(string.Format(
+                    LocalizableStrings.AmbiguousCommandName,
+                    commandName));
             }
 
-            var projectRootPath = directory;
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.ToolLibraryFound,
+                ProjectDependenciesCommandResolverName,
+                toolLibraries?.Count() > 0));
 
-            if (!File.Exists(Path.Combine(projectRootPath, Project.FileName)))
-            {
-                return null;
-            }
-
-            var projectContext = ProjectContext.Create(
-                projectRootPath, 
-                framework, 
-                PlatformServices.Default.Runtime.GetAllCandidateRuntimeIdentifiers());
-
-            if (projectContext.RuntimeIdentifier == null)
-            {
-                return null;
-            }
-
-            return projectContext;
+            return toolLibraries?.FirstOrDefault();
         }
 
         private IEnumerable<string> GetAllowedCommandExtensionsFromEnvironment(IEnvironmentProvider environment)

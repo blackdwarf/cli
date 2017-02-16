@@ -8,7 +8,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.TestFramework;
-using Microsoft.DotNet.ProjectModel;
 
 namespace Microsoft.DotNet.Tools.Test.Utilities
 {
@@ -18,48 +17,35 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
     /// </summary>
     public abstract class TestBase : IDisposable
     {
-        protected const string DefaultFramework = "netstandardapp1.5";
+        protected const string DefaultFramework = "netcoreapp1.0";
+        protected const string DefaultLibraryFramework = "netstandard1.5";
         private TempRoot _temp;
-        private static TestAssetsManager s_testsAssetsMgr;
-        private static string s_repoRoot;
+        private static TestAssets s_testAssets;
+
 
         protected static string RepoRoot
         {
             get
             {
-                if (!string.IsNullOrEmpty(s_repoRoot))
-                {
-                    return s_repoRoot;
-                }
-
-                string directory = AppContext.BaseDirectory;
-
-                while (!Directory.Exists(Path.Combine(directory, ".git")) && directory != null)
-                {
-                    directory = Directory.GetParent(directory).FullName;
-                }
-
-                if (directory == null)
-                {
-                    throw new Exception("Cannot find the git repository root");
-                }
-
-                s_repoRoot = directory;
-                return s_repoRoot;
+                return RepoDirectoriesProvider.RepoRoot;
             }
         }
 
-        protected static TestAssetsManager TestAssetsManager
+        protected static TestAssets TestAssets
         {
             get
             {
-                if (s_testsAssetsMgr == null)
+                if (s_testAssets == null)
                 {
-                    string assetsRoot = Path.Combine(RepoRoot, "TestAssets", "TestProjects");
-                    s_testsAssetsMgr = new TestAssetsManager(assetsRoot);
+                    var assetsRoot = Path.Combine(RepoRoot, "TestAssets");
+
+                    s_testAssets = new TestAssets(
+                        new DirectoryInfo(assetsRoot),
+                        new FileInfo(new EnvironmentProvider().GetCommandPath("dotnet")),
+                        new FileInfo(new RepoDirectoriesProvider().PjDotnet)); 
                 }
 
-                return s_testsAssetsMgr;
+                return s_testAssets;
             }
         }
 
@@ -103,7 +89,7 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
                 string.Equals("on", val, StringComparison.OrdinalIgnoreCase));
         }
 
-        protected void TestExecutable(string outputDir,
+        protected CommandResult TestExecutable(string outputDir,
             string executableName,
             string expectedOutput)
         {
@@ -123,9 +109,13 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
 
             var result = executableCommand.ExecuteWithCapturedOutput(string.Join(" ", args));
 
-            result.Should().HaveStdOut(expectedOutput);
+            if (!string.IsNullOrEmpty(expectedOutput))
+            { 
+                result.Should().HaveStdOut(expectedOutput);
+            }
             result.Should().NotHaveStdErr();
             result.Should().Pass();
+            return result;
         }
 
         protected void TestOutputExecutable(

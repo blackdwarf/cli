@@ -1,7 +1,5 @@
 using System;
 using System.IO;
-using Microsoft.Extensions.PlatformAbstractions;
-using System.Diagnostics;
 using System.Reflection;
 
 namespace Microsoft.DotNet.Cli.Utils
@@ -13,13 +11,22 @@ namespace Microsoft.DotNet.Cli.Utils
 
         private string _muxerPath;
 
+        internal string SharedFxVersion
+        {
+            get
+            {
+                var depsFile = new FileInfo(GetDataFromAppDomain("FX_DEPS_FILE"));
+                return depsFile.Directory.Name;
+            }
+        }
+
         public string MuxerPath
         {
             get
             {
                 if (_muxerPath == null)
                 {
-                    throw new InvalidOperationException("Unable to locate dotnet multiplexer");
+                    throw new InvalidOperationException(LocalizableStrings.UnableToLocateDotnetMultiplexer);
                 }
                 return _muxerPath;
             }
@@ -33,11 +40,24 @@ namespace Microsoft.DotNet.Cli.Utils
             }
         }
 
+        public static string GetDataFromAppDomain(string propertyName)
+        {
+            var appDomainType = typeof(object).GetTypeInfo().Assembly?.GetType("System.AppDomain");
+            var currentDomain = appDomainType?.GetProperty("CurrentDomain")?.GetValue(null);
+            var deps = appDomainType?.GetMethod("GetData")?.Invoke(currentDomain, new[] { propertyName });
+
+            return deps as string;
+        }
+
         private bool TryResolveMuxerFromParentDirectories()
         {
-            var appBase = new FileInfo(typeof(object).GetTypeInfo().Assembly.Location);
-            var muxerDir = appBase.Directory?.Parent?.Parent?.Parent;
+            var fxDepsFile = GetDataFromAppDomain("FX_DEPS_FILE");
+            if (string.IsNullOrEmpty(fxDepsFile))
+            {
+                return false;
+            }
 
+            var muxerDir = new FileInfo(fxDepsFile).Directory?.Parent?.Parent?.Parent;
             if (muxerDir == null)
             {
                 return false;

@@ -4,13 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 using Microsoft.DotNet.Cli.Utils;
-using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.Tools.Test.Utilities;
-using Microsoft.Extensions.PlatformAbstractions;
 using System.Diagnostics;
 using FluentAssertions;
 
@@ -18,19 +17,18 @@ namespace Microsoft.DotNet.Tests.ArgumentForwarding
 {
     public class ArgumentForwardingTests : TestBase
     {
-        private static readonly string s_reflectorExeName = "ArgumentsReflector" + Constants.ExeSuffix;
+        private static readonly string s_reflectorDllName = "ArgumentsReflector.dll";
         private static readonly string s_reflectorCmdName = "reflector_cmd";
 
         private string ReflectorPath { get; set; }
         private string ReflectorCmdPath { get; set; }
 
-        public static void Main()
-        {
-            Console.WriteLine("Dummy Entrypoint.");
-        }
-
         public ArgumentForwardingTests()
         {
+            Environment.SetEnvironmentVariable(
+                Constants.MSBUILD_EXE_PATH,
+                Path.Combine(new RepoDirectoriesProvider().Stage2Sdk, "MSBuild.dll"));
+
             // This test has a dependency on an argument reflector
             // Make sure it's been binplaced properly
             FindAndEnsureReflectorPresent();
@@ -38,7 +36,7 @@ namespace Microsoft.DotNet.Tests.ArgumentForwarding
 
         private void FindAndEnsureReflectorPresent()
         {
-            ReflectorPath = Path.Combine(AppContext.BaseDirectory, s_reflectorExeName);
+            ReflectorPath = Path.Combine(AppContext.BaseDirectory, s_reflectorDllName);
             ReflectorCmdPath = Path.Combine(AppContext.BaseDirectory, s_reflectorCmdName);
             File.Exists(ReflectorPath).Should().BeTrue();
         }
@@ -50,6 +48,7 @@ namespace Microsoft.DotNet.Tests.ArgumentForwarding
         /// <param name="testUserArgument"></param>
         [Theory]
         [InlineData(@"""abc"" d e")]
+        [InlineData(@"""ábc"" d é")]
         [InlineData(@"""abc""      d e")]
         [InlineData("\"abc\"\t\td\te")]
         [InlineData(@"a\\b d""e f""g h")]
@@ -88,7 +87,7 @@ namespace Microsoft.DotNet.Tests.ArgumentForwarding
         /// This is a critical scenario for the driver.
         /// </summary>
         /// <param name="testUserArgument"></param>
-        [Theory]
+        [WindowsOnlyTheory]
         [InlineData(@"""abc"" d e")]
         [InlineData(@"""abc""      d e")]
         [InlineData("\"abc\"\t\td\te")]
@@ -102,11 +101,6 @@ namespace Microsoft.DotNet.Tests.ArgumentForwarding
         [InlineData(@"a b c""def")]
         public void TestArgumentForwardingCmd(string testUserArgument)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return;
-            }
-
             // Get Baseline Argument Evaluation via Reflector
             // This does not need to be different for cmd because
             // it only establishes what the string[] args should be
@@ -149,18 +143,13 @@ namespace Microsoft.DotNet.Tests.ArgumentForwarding
             }
         }
 
-        [Theory]
+        [WindowsOnlyTheory]
         [InlineData(@"a\""b c d")]
         [InlineData(@"a\\\""b c d")]
         [InlineData(@"""\a\"" \\""\\\ b c")]
         [InlineData(@"a\""b \\ cd ""\e f\"" \\""\\\")]
         public void TestArgumentForwardingCmdFailsWithUnbalancedQuote(string testArgString)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return;
-            }
-
             // Get Baseline Argument Evaluation via Reflector
             // This does not need to be different for cmd because
             // it only establishes what the string[] args should be
@@ -182,7 +171,7 @@ namespace Microsoft.DotNet.Tests.ArgumentForwarding
         /// <returns></returns>
         private string[] EscapeAndEvaluateArgumentString(string[] rawEvaluatedArgument)
         {
-            var commandResult = Command.Create(ReflectorPath, rawEvaluatedArgument)
+            var commandResult = Command.Create("dotnet", new[] { ReflectorPath }.Concat(rawEvaluatedArgument))
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute();
@@ -262,8 +251,8 @@ namespace Microsoft.DotNet.Tests.ArgumentForwarding
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = ReflectorPath,
-                    Arguments = testUserArgument,
+                    FileName = Env.GetCommandPath("dotnet", ".exe", ""),
+                    Arguments = $"{ReflectorPath} {testUserArgument}",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     CreateNoWindow = true

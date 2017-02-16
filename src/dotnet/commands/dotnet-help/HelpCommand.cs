@@ -8,34 +8,44 @@ namespace Microsoft.DotNet.Tools.Help
 {
     public class HelpCommand
     {
-        private const string ProductLongName = ".NET Command Line Tools";
-        private const string UsageText = @"Usage: dotnet [common-options] [command] [arguments]
+        private static readonly string UsageText = $@"{LocalizableStrings.Usage}: dotnet [host-options] [command] [arguments] [common-options]
 
-Arguments:
-  [command]     The command to execute
-  [arguments]   Arguments to pass to the command
+{LocalizableStrings.Arguments}:
+  [command]             {LocalizableStrings.CommandDefinition}
+  [arguments]           {LocalizableStrings.ArgumentsDefinition}
+  [host-options]        {LocalizableStrings.HostOptionsDefinition}
+  [common-options]      {LocalizableStrings.OptionsDescription}
 
-Common Options (passed before the command):
-  -v|--verbose  Enable verbose output
-  --version     Display .NET CLI Version Number
-  --info        Display .NET CLI Info
+{LocalizableStrings.CommonOptions}:
+  -v|--verbose          {LocalizableStrings.VerboseDefinition}
+  -h|--help             {LocalizableStrings.HelpDefinition} 
 
-Common Commands:
-  new           Initialize a basic .NET project
-  restore       Restore dependencies specified in the .NET project
-  build         Builds a .NET project
-  publish       Publishes a .NET project for deployment (including the runtime)
-  run           Compiles and immediately executes a .NET project
-  test          Executes tests in a test project
-  repl          Launch an interactive session (read, eval, print, loop)
-  pack          Creates a NuGet package";
-        public static readonly string ProductVersion = GetProductVersion();
+{LocalizableStrings.HostOptions}:
+  -d|--diagnostics      {LocalizableStrings.DiagnosticsDefinition}
+  --version             {LocalizableStrings.VersionDescription}
+  --info                {LocalizableStrings.InfoDescription}
 
-        private static string GetProductVersion()
-        {
-            var attr = typeof(HelpCommand).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-            return attr?.InformationalVersion;
-        }
+{LocalizableStrings.Commands}:
+  new           {LocalizableStrings.NewDefinition}
+  restore       {LocalizableStrings.RestoreDefinition}
+  build         {LocalizableStrings.BuildDefinition}
+  publish       {LocalizableStrings.PublishDefinition}
+  run           {LocalizableStrings.RunDefinition}
+  test          {LocalizableStrings.TestDefinition}
+  pack          {LocalizableStrings.PackDefinition}
+  migrate       {LocalizableStrings.MigrateDefinition}
+  clean         {LocalizableStrings.CleanDefinition}
+  sln           {LocalizableStrings.SlnDefinition}
+
+Project modification commands:
+  add           Add items to the project
+  remove        Remove items from the project
+  list          List items in the project
+
+{LocalizableStrings.AdvancedCommands}:
+  nuget         {LocalizableStrings.NugetDefinition}
+  msbuild       {LocalizableStrings.MsBuildDefinition}
+  vstest        {LocalizableStrings.VsTestDefinition}";
 
         public static int Run(string[] args)
         {
@@ -58,10 +68,10 @@ Common Commands:
 
         public static void PrintVersionHeader()
         {
-            var versionString = string.IsNullOrEmpty(ProductVersion) ?
+            var versionString = string.IsNullOrEmpty(Product.Version) ?
                 string.Empty :
-                $" ({ProductVersion})";
-            Reporter.Output.WriteLine(ProductLongName + versionString);
+                $" ({Product.Version})";
+            Reporter.Output.WriteLine(Product.LongName + versionString);
         }
     }
 }

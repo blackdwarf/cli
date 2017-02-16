@@ -44,12 +44,19 @@ done
 
 # $args array may have empty elements in it.
 # The easiest way to remove them is to cast to string and back to array.
+# This will actually break quoted arguments, arguments like 
+# -test "hello world" will be broken into three arguments instead of two, as it should.
 temp="${args[@]}"
 args=($temp)
 
+dockerbuild()
+{
+    BUILD_COMMAND=/opt/code/run-build.sh $DIR/scripts/dockerrun.sh --non-interactive "$@"
+}
+
 # Check if we need to build in docker
 if [ ! -z "$BUILD_IN_DOCKER" ]; then
-    $DIR/scripts/dockerbuild.sh "${args[@]}"
+    dockerbuild "${args[@]}"
 else
-    $DIR/scripts/run-build.sh "${args[@]}"
+    $DIR/run-build.sh "${args[@]}"
 fi

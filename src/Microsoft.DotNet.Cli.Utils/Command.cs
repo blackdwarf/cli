@@ -8,15 +8,16 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NuGet.Frameworks;
-using Microsoft.DotNet.ProjectModel;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
     public class Command : ICommand
     {
         private readonly Process _process;
-        private readonly StreamForwarder _stdOut;
-        private readonly StreamForwarder _stdErr;
+
+        private StreamForwarder _stdOut;
+        
+        private StreamForwarder _stdErr;
 
         private bool _running = false;
 
@@ -26,12 +27,16 @@ namespace Microsoft.DotNet.Cli.Utils
             {
                 FileName = commandSpec.Path,
                 Arguments = commandSpec.Args,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true
+                UseShellExecute = false
             };
 
-            _stdOut = new StreamForwarder();
-            _stdErr = new StreamForwarder();
+            foreach(var environmentVariable in commandSpec.EnvironmentVariables)
+            {
+                if (!psi.Environment.ContainsKey(environmentVariable.Key))
+                {
+                    psi.Environment.Add(environmentVariable.Key, environmentVariable.Value);
+                }
+            }
 
             _process = new Process
             {
@@ -59,22 +64,41 @@ namespace Microsoft.DotNet.Cli.Utils
         /// array will be present in the corresponding argument array
         /// in the command's process.
         /// </summary>
-        /// <param name="commandName"></param>
-        /// <param name="args"></param>
-        /// <param name="framework"></param>
-        /// <returns></returns>
         public static Command Create(
             string commandName, 
             IEnumerable<string> args, 
             NuGetFramework framework = null, 
             string configuration = Constants.DefaultConfiguration,
-            string outputPath = null)
+            string outputPath = null,
+            string applicationName  = null)
         {
-            var commandSpec = CommandResolver.TryResolveCommandSpec(commandName, 
+            return Create(
+                new DefaultCommandResolverPolicy(),
+                commandName,
+                args,
+                framework,
+                configuration,
+                outputPath,
+                applicationName);
+        }
+
+        public static Command Create(
+            ICommandResolverPolicy commandResolverPolicy,
+            string commandName,
+            IEnumerable<string> args,
+            NuGetFramework framework = null,
+            string configuration = Constants.DefaultConfiguration,
+            string outputPath = null,
+            string applicationName  = null)
+        {
+            var commandSpec = CommandResolver.TryResolveCommandSpec(
+                commandResolverPolicy,
+                commandName,
                 args, 
                 framework, 
                 configuration: configuration,
-                outputPath: outputPath);
+                outputPath: outputPath,
+                applicationName: applicationName);
 
             if (commandSpec == null)
             {
@@ -90,57 +114,50 @@ namespace Microsoft.DotNet.Cli.Utils
         {
             return new Command(commandSpec);
         }
-        
-        public static Command CreateForScript(
-            string commandName, 
-            IEnumerable<string> args, 
-            Project project, 
-            string[] inferredExtensionList)
-        {
-            var commandSpec = CommandResolver.TryResolveScriptCommandSpec(commandName, 
-                args, 
-                project, 
-                inferredExtensionList);
-
-            if (commandSpec == null)
-            {
-                throw new CommandUnknownException(commandName);
-            }
-
-            var command = new Command(commandSpec);
-
-            return command;
-        }
 
         public CommandResult Execute()
         {
 
-            Reporter.Verbose.WriteLine($"Running {_process.StartInfo.FileName} {_process.StartInfo.Arguments}");
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.RunningFileNameArguments,
+                _process.StartInfo.FileName,
+                _process.StartInfo.Arguments));
 
             ThrowIfRunning();
+
             _running = true;
 
             _process.EnableRaisingEvents = true;
 
 #if DEBUG
             var sw = Stopwatch.StartNew();
+            
             Reporter.Verbose.WriteLine($"> {FormatProcessInfo(_process.StartInfo)}".White());
 #endif
-            _process.Start();
+            using (PerfTrace.Current.CaptureTiming($"{Path.GetFileNameWithoutExtension(_process.StartInfo.FileName)} {_process.StartInfo.Arguments}"))
+            {
+                _process.Start();
 
-            Reporter.Verbose.WriteLine($"Process ID: {_process.Id}");
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.ProcessId,
+                    _process.Id));
 
-            var threadOut = _stdOut.BeginRead(_process.StandardOutput);
-            var threadErr = _stdErr.BeginRead(_process.StandardError);
+                var taskOut = _stdOut?.BeginRead(_process.StandardOutput);
+                var taskErr = _stdErr?.BeginRead(_process.StandardError);
+                _process.WaitForExit();
 
-            _process.WaitForExit();
-            threadOut.Join();
-            threadErr.Join();
+                taskOut?.Wait();
+                taskErr?.Wait();
+            }
 
             var exitCode = _process.ExitCode;
 
 #if DEBUG
-            var message = $"< {FormatProcessInfo(_process.StartInfo)} exited with {exitCode} in {sw.ElapsedMilliseconds} ms.";
+            var message = string.Format(
+                LocalizableStrings.ProcessExitedWithCode,
+                FormatProcessInfo(_process.StartInfo),
+                exitCode,
+                sw.ElapsedMilliseconds);
             if (exitCode == 0)
             {
                 Reporter.Verbose.WriteLine(message.Green());
@@ -152,10 +169,10 @@ namespace Microsoft.DotNet.Cli.Utils
 #endif
 
             return new CommandResult(
-                this._process.StartInfo,
+                _process.StartInfo,
                 exitCode,
-                _stdOut.CapturedOutput,
-                _stdErr.CapturedOutput);
+                _stdOut?.CapturedOutput,
+                _stdErr?.CapturedOutput);
         }
 
         public ICommand WorkingDirectory(string projectDirectory)
@@ -177,6 +194,7 @@ namespace Microsoft.DotNet.Cli.Utils
         public ICommand CaptureStdOut()
         {
             ThrowIfRunning();
+            EnsureStdOut();
             _stdOut.Capture();
             return this;
         }
@@ -184,6 +202,7 @@ namespace Microsoft.DotNet.Cli.Utils
         public ICommand CaptureStdErr()
         {
             ThrowIfRunning();
+            EnsureStdErr();
             _stdErr.Capture();
             return this;
         }
@@ -193,6 +212,8 @@ namespace Microsoft.DotNet.Cli.Utils
             ThrowIfRunning();
             if (!onlyIfVerbose || CommandContext.IsVerbose())
             {
+                EnsureStdOut();
+
                 if (to == null)
                 {
                     _stdOut.ForwardTo(writeLine: Reporter.Output.WriteLine);
@@ -211,6 +232,8 @@ namespace Microsoft.DotNet.Cli.Utils
             ThrowIfRunning();
             if (!onlyIfVerbose || CommandContext.IsVerbose())
             {
+                EnsureStdErr();
+
                 if (to == null)
                 {
                     _stdErr.ForwardTo(writeLine: Reporter.Error.WriteLine);
@@ -227,6 +250,8 @@ namespace Microsoft.DotNet.Cli.Utils
         public ICommand OnOutputLine(Action<string> handler)
         {
             ThrowIfRunning();
+            EnsureStdOut();
+
             _stdOut.ForwardTo(writeLine: handler);
             return this;
         }
@@ -234,6 +259,8 @@ namespace Microsoft.DotNet.Cli.Utils
         public ICommand OnErrorLine(Action<string> handler)
         {
             ThrowIfRunning();
+            EnsureStdErr();
+
             _stdErr.ForwardTo(writeLine: handler);
             return this;
         }
@@ -254,11 +281,25 @@ namespace Microsoft.DotNet.Cli.Utils
             return info.FileName + " " + info.Arguments;
         }
 
+        private void EnsureStdOut()
+        {
+            _stdOut = _stdOut ?? new StreamForwarder();
+            _process.StartInfo.RedirectStandardOutput = true;
+        }
+
+        private void EnsureStdErr()
+        {
+            _stdErr = _stdErr ?? new StreamForwarder();
+            _process.StartInfo.RedirectStandardError = true;
+        }
+
         private void ThrowIfRunning([CallerMemberName] string memberName = null)
         {
             if (_running)
             {
-                throw new InvalidOperationException($"Unable to invoke {memberName} after the command has been run");
+                throw new InvalidOperationException(string.Format(
+                    LocalizableStrings.UnableToInvokeMemberNameAfterCommand,
+                    memberName));
             }
         }
     }

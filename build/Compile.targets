@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="compile/LzmaArchive.targets" />
+  <Import Project="crossgen/Crossgen.targets" />
+
+  <PropertyGroup>
+    <BinaryToCorehostifyRelDir>runtimes/any/native</BinaryToCorehostifyRelDir>
+    <MSBuildImportsDir>$(RepoRoot)/resources/MSBuildImports</MSBuildImportsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PublishOutputExtensions Include="$(ExeExtension);.dll;.pdb;.deps.json;.runtimeconfig.json" />
+    <BundledTools Include="MSBuild;NuGet.CommandLine.XPlat;dotnet" />
+    <MSBuildImportsContent Include="$(MSBuildImportsDir)/**/*" /> 
+  </ItemGroup>
+
+  <Target Name="Compile" DependsOnTargets="Prepare;
+                                           CompileCLI;
+                                           PublishSdks;
+                                           PublishTemplates;
+                                           BuildProjectsForNuGetPackages;
+                                           GetNuGetPackagesArchive;" />
+
+  <Target Name="CompileCLI"
+          DependsOnTargets="InitCrossgenProps;">
+      <PropertyGroup>
+        <SrcDirectory>$(RepoRoot)/src</SrcDirectory>
+        <DynamicLibPrefix Condition=" '$(OSName)' == 'win' "></DynamicLibPrefix>
+        <DynamicLibPrefix Condition=" '$(OSName)' != 'win' ">lib</DynamicLibPrefix>
+
+        <DynamicLibSuffix Condition=" '$(OSName)' == 'win' ">.dll</DynamicLibSuffix>
+        <DynamicLibSuffix Condition=" '$(OSName)' == 'osx' ">.dylib</DynamicLibSuffix>
+        <DynamicLibSuffix Condition=" '$(DynamicLibSuffix)' == '' ">.so</DynamicLibSuffix>
+
+        <DotnetHostBaseName>dotnet$(ExeExtension)</DotnetHostBaseName>
+        <DotnetHostFxrBaseName>$(DynamicLibPrefix)hostfxr$(DynamicLibSuffix)</DotnetHostFxrBaseName>
+        <HostPolicyBaseName>$(DynamicLibPrefix)hostpolicy$(DynamicLibSuffix)</HostPolicyBaseName>
+
+        <StageDirectory>$(Stage2Directory)</StageDirectory>
+        <StageSymbolsDirectory>$(Stage2SymbolsDirectory)</StageSymbolsDirectory>
+        <SdkOutputDirectory>$(StageDirectory)/sdk/$(SdkVersion)</SdkOutputDirectory>
+        <BinaryToCorehostifyOutDir>$(SdkOutputDirectory)/$(BinaryToCorehostifyRelDir)</BinaryToCorehostifyOutDir>
+        <MSBuildTargetsDirectory>$(SdkOutputDirectory)/runtimes/any/native</MSBuildTargetsDirectory>
+
+        <SharedFrameworkNameVersionPath>$(StageDirectory)/shared/$(SharedFrameworkName)/$(SharedFrameworkVersion)</SharedFrameworkNameVersionPath>
+      </PropertyGroup>
+
+      <ItemGroup>
+        <SharedFramework Remove="*" />
+        <SharedFramework Include="$(SharedFrameworkPublishDirectory)/**/*" />
+
+        <RuntimeTargetsAssetsToRemoveFromDeps Remove="*" />
+        <RuntimeTargetsAssetsToRemoveFromDeps Include="MSBuild" />
+        
+        <RuntimeAssetsToRemoveFromDeps Remove="*" />
+        <RuntimeAssetsToRemoveFromDeps Include="redist" />
+        <RuntimeAssetsToRemoveFromDeps Include="tool_msbuild" />
+        <RuntimeAssetsToRemoveFromDeps Include="tool_nuget" />
+      </ItemGroup>
+
+      <RemoveDir Directories="$(StageDirectory)" />
+      <MakeDir Directories="$(StageDirectory)"/>
+
+      <!-- CopySharedFramework -->
+      <Copy SourceFiles="@(SharedFramework)"
+            DestinationFiles="@(SharedFramework->'$(StageDirectory)/%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- Workaround for https://github.com/dotnet/sdk/issues/115 -->
+    <ItemGroup>
+      <HackFilesToCopy Include="$(NuGetPackagesDir)\microsoft.build.runtime\$(CLI_MSBuild_Version)\contentFiles\any\netcoreapp1.0\**;
+                                $(NuGetPackagesDir)\microsoft.build.runtime\$(CLI_MSBuild_Version)\contentFiles\any\netcoreapp1.1\**;
+                                $(NuGetPackagesDir)\microsoft.codeanalysis.build.tasks\$(CLI_Roslyn_Version)\contentFiles\any\any\**;
+                                $(NuGetPackagesDir)\microsoft.testplatform.cli\$(CLI_TestPlatform_Version)\contentFiles\any\any\**" />
+    </ItemGroup>
+    <Copy SourceFiles="@(HackFilesToCopy)"
+          DestinationFiles="@(HackFilesToCopy->'$(SdkOutputDirectory)/%(RecursiveDir)%(Filename)%(Extension)')" />
+    
+    <!-- Publish DotNet -->
+    <DotNetPublish ToolPath="$(Stage0Directory)"
+                   Output="$(SdkOutputDirectory)"
+                   Configuration="$(Configuration)"
+                   VersionSuffix="$(CommitCount)"
+                   ProjectPath="$(SrcDirectory)/redist/redist.csproj"
+                   MSBuildArgs="/p:GenerateRuntimeConfigurationFiles=true" />
+
+    <!-- Publish Roslyn -->
+    <DotNetPublish ToolPath="$(Stage0Directory)"
+                   Output="$(SdkOutputDirectory)/Roslyn"
+                   Configuration="$(Configuration)"
+                   VersionSuffix="$(CommitCount)"
+                   ProjectPath="$(SrcDirectory)/tool_roslyn/tool_roslyn.csproj" />
+
+      <!-- Corehostify Binaries -->
+      <ItemGroup Condition=" '$(OSName)' != 'win' ">
+        <SdkOutputChmodTargets Remove="*" />
+        <SdkOutputChmodTargets Include="$(SdkOutputDirectory)/**/*.exe;
+                                      $(SdkOutputDirectory)/**/*.dll" >
+          <!-- Managed assemblies do not need execute -->
+          <Mode>u=rw,g=r,o=r</Mode>
+        </SdkOutputChmodTargets>
+
+        <SdkOutputChmodTargets Include="$(SdkOutputDirectory)/**/*.dylib;
+                                      $(SdkOutputDirectory)/**/*.so" >
+          <!-- Generally, dylibs and sos have 'x' -->
+          <Mode>u=rwx,g=rx,o=rx</Mode>
+        </SdkOutputChmodTargets>
+
+        <SdkOutputChmodTargets Include="$(SdkOutputDirectory)/**/*"
+                             Exclude="$(SdkOutputDirectory)/**/*.*" >
+          <!-- Executables need x -->
+          <Mode>u=rwx,g=rx,o=rx</Mode>
+        </SdkOutputChmodTargets>
+      </ItemGroup>
+
+      <Chmod Condition=" '$(OSName)' != 'win' "
+             File="%(SdkOutputChModTargets.FullPath)"
+             Mode="%(SdkOutputChModTargets.Mode)" />
+
+      <RemoveAssetFromDepsPackages DepsFile="$(SdkOutputDirectory)/redist.deps.json"
+                                   SectionName="runtimeTargets"
+                                   AssetPath="$(BinaryToCorehostifyRelDir)/%(RuntimeTargetsAssetsToRemoveFromDeps.Identity).exe" />
+
+      <RemoveAssetFromDepsPackages DepsFile="$(SdkOutputDirectory)/redist.deps.json"
+                                   SectionName="runtime"
+                                   AssetPath="%(RuntimeAssetsToRemoveFromDeps.Identity).dll" />
+
+      <Copy SourceFiles="$(SdkOutputDirectory)/redist.deps.json"
+            DestinationFiles="$(SdkOutputDirectory)/%(BundledTools.Identity).deps.json" />
+
+      <Copy SourceFiles="$(SdkOutputDirectory)/redist.runtimeconfig.json"
+            DestinationFiles="$(SdkOutputDirectory)/%(BundledTools.Identity).runtimeconfig.json" />
+
+      <ChangeEntryPointLibraryName
+            DepsFile="$(SdkOutputDirectory)/%(BundledTools.Identity).deps.json"
+            NewName="%(BundledTools.Identity).deps.json" />
+
+      <!-- cleanup project output we don't need -->
+      <Delete Files="$(SdkOutputDirectory)/redist%(PublishOutputExtensions.Identity)" />
+      <Delete Files="$(SdkOutputDirectory)/tool_msbuild%(PublishOutputExtensions.Identity)" />
+      <Delete Files="$(SdkOutputDirectory)/tool_nuget%(PublishOutputExtensions.Identity)" />
+
+      <!-- Copy Host to SDK Directory -->
+      <Copy SourceFiles="$(SharedFrameworkNameVersionPath)/$(DotnetHostBaseName)"
+            DestinationFiles="$(SdkOutputDirectory)/corehost$(ExeExtension)" />
+
+      <Copy SourceFiles="$(SharedFrameworkNameVersionPath)/$(DotnetHostFxrBaseName)"
+            DestinationFiles="$(SdkOutputDirectory)/$(DotnetHostFxrBaseName)" />
+
+      <Copy SourceFiles="$(SharedFrameworkNameVersionPath)/$(HostPolicyBaseName)"
+            DestinationFiles="$(SdkOutputDirectory)/$(HostPolicyBaseName)" />
+
+      <!-- copy core sdk -->
+      <Copy SourceFiles="@(MSBuildImportsContent)"
+            DestinationFolder="$(SdkOutputDirectory)/%(RecursiveDir)" />
+
+      <ItemGroup>
+        <NETCore10Assemblies Include="$(SdkOutputDirectory)/System.ComponentModel.Primitives.dll;
+                                      $(SdkOutputDirectory)/System.Collections.Specialized.dll;
+                                      $(SdkOutputDirectory)/System.Collections.NonGeneric.dll;
+                                      $(SdkOutputDirectory)/System.Private.DataContractSerialization.dll" />
+      </ItemGroup>
+    
+      <!-- Move these "1.0" assemblies that TestPlatform lays down out of the way so crossgen doesn't pick them up.
+           We need https://github.com/dotnet/cli/issues/5464 fixed, so test platform is in a separate directory -->
+      <Move SourceFiles="@(NETCore10Assemblies)"
+            DestinationFiles="@(NETCore10Assemblies->'$(SdkOutputDirectory)/%(Filename)%(Extension).bak')" />
+
+      <!-- Crossgen the CLI -->
+      <ItemGroup>
+        <SdkFiles Remove="*" />
+
+        <!-- Removing Full CLR built TestHost assemblies from getting Crossgen as it is throwing error -->
+        <SdkFilesExclude Include="$(SdkOutputDirectory)/TestHost*/**/*" />
+        <SdkFiles Include="$(SdkOutputDirectory)/**/*" Exclude="@(SdkFilesExclude)" />
+        <SdkFilesWithPEMarker Remove="*" />
+      </ItemGroup>
+
+      <AddMetadataIsPE Items="@(SdkFiles)">
+        <Output TaskParameter="ResultItems" ItemName="SdkFilesWithPEMarker" />
+      </AddMetadataIsPE>
+
+      <ItemGroup>
+        <CrossgenTargets Remove="*" />
+        <CrossgenTargets Include="%(SdkFilesWithPEMarker.FullPath)" Condition=" '%(SdkFilesWithPEMarker.IsPE)' == 'True' " />
+
+        <CompileStageSdkDirectories Remove="*" />
+      </ItemGroup>
+
+      <RemoveDuplicates Inputs="@(SdkFiles->'%(RootDir)%(Directory)')">
+        <Output TaskParameter="Filtered" ItemName="CompileStageSdkDirectories" />
+      </RemoveDuplicates>
+
+      <!-- Ensure crossgen tool is executable.  See https://github.com/NuGet/Home/issues/4424 -->
+      <Chmod Condition=" '$(OSName)' != 'win' And '$(DISABLE_CROSSGEN)' != '1' "
+             File="$(CrossgenPath)"
+             Mode="u+x" />
+
+      <Crossgen Condition=" '$(DISABLE_CROSSGEN)' != '1' "
+                SourceAssembly="%(CrossgenTargets.FullPath)"
+                DestinationPath="%(CrossgenTargets.FullPath)"
+                JITPath="$(LibCLRJitPath)"
+                CrossgenPath="$(CrossgenPath)"
+                ReadyToRun="True"
+                PlatformAssemblyPaths="@(PlatformAssemblies);
+                                       @(CompileStageSdkDirectories);
+                                       $(SharedFrameworkNameVersionPath)" />
+
+      <!-- Move the "1.0" assemblies back -->
+      <Move SourceFiles="@(NETCore10Assemblies->'$(SdkOutputDirectory)/%(Filename)%(Extension).bak')"
+            DestinationFiles="@(NETCore10Assemblies)" />
+
+      <!-- Generate .version file -->
+      <WriteLinesToFile File="$(SdkOutputDirectory)/.version"
+                        Lines="$(CommitHash);$(SdkVersion);$(Rid)"
+                        Overwrite="true" />
+
+      <ItemGroup>
+        <MSBuildTargetsToCopy Include="$(MSBuildTargetsDirectory)/**/*.targets" />
+        <MSBuildTargetsToCopy Include="$(MSBuildTargetsDirectory)/**/*.Targets" />
+        <MSBuildTargetsToCopy Include="$(MSBuildTargetsDirectory)/**/*.props" />
+        <MSBuildTargetsToCopy Include="$(MSBuildTargetsDirectory)/**/*.overridetasks" />
+        <MSBuildTargetsToCopy Include="$(MSBuildTargetsDirectory)/**/*.tasks" />
+      </ItemGroup>
+
+      <Copy SourceFiles="@(MSBuildTargetsToCopy)"
+            DestinationFiles="@(MSBuildTargetsToCopy->'$(SdkOutputDirectory)/%(RecursiveDir)%(Filename)%(Extension)')" />
+
+      <ItemGroup>
+        <FilesToClean Include="$(StageDirectory)/sdk/**/vbc.exe" />
+      </ItemGroup>
+
+      <Delete Files="@(FilesToClean)" />
+
+      <ItemGroup>
+        <FilesToCopy Include="$(StageDirectory)/**/*" />
+        <PdbsToClean Include="$(StageDirectory)/sdk/**/*.pdb" />
+      </ItemGroup>
+
+      <Copy SourceFiles="@(FilesToCopy)"
+          DestinationFiles="@(FilesToCopy->'$(StageSymbolsDirectory)\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+      <Delete Files="@(PdbsToClean)" />
+  </Target>
+
+  <Target Name="PublishSdks"
+          DependsOnTargets="Prepare">
+    <ItemGroup>
+      <SdksToBundle Include="build/BundledSdks.proj">
+        <Properties>
+          CLIBuildDll=$(CLIBuildDll);
+          NuGetPackagesDir=$(NuGetPackagesDir);
+          SdkLayoutDirectory=$(SdkOutputDirectory)/Sdks/%(BundledSdk.Identity);
+          SdkPackageName=%(BundledSdk.Identity);
+          SdkPackageVersion=%(BundledSdk.Version);
+          Stage0Directory=$(Stage0Directory)
+        </Properties>
+      </SdksToBundle>
+    </ItemGroup>
+
+    <MSBuild
+      BuildInParallel="False"
+      Projects="@(SdksToBundle)">
+    </MSBuild>
+  </Target>
+
+  <Target Name="PublishTemplates"
+          DependsOnTargets="Prepare">
+    <ItemGroup>
+      <TemplatesToBundle Include="build/BundledTemplates.proj">
+        <Properties>
+          TemplateLayoutDirectory=$(SdkOutputDirectory)/Templates;
+          TemplatePackageName=%(BundledTemplate.Identity);
+          TemplatePackageVersion=%(BundledTemplate.Version);
+          Stage0Directory=$(Stage0Directory)
+        </Properties>
+      </TemplatesToBundle>
+    </ItemGroup>
+
+    <MSBuild
+      BuildInParallel="False"
+      Projects="@(TemplatesToBundle)">
+    </MSBuild>
+  </Target>
+</Project>

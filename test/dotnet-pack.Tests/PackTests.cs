@@ -4,95 +4,240 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
+using System.Xml.Linq;
 using FluentAssertions;
-using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.Tools.Test.Utilities;
 using Xunit;
 
-namespace Microsoft.DotNet.Tools.Compiler.Tests
+namespace Microsoft.DotNet.Tools.Pack.Tests
 {
     public class PackTests : TestBase
     {
-        private readonly string _testProjectsRoot;
-
-        public PackTests()
-        {
-            _testProjectsRoot = Path.Combine(AppContext.BaseDirectory, "TestAssets", "TestProjects");
-        }
-
-        [Fact]
+        [Fact(Skip="https://github.com/dotnet/cli/issues/4488")]
         public void OutputsPackagesToConfigurationSubdirWhenOutputParameterIsNotPassed()
         {
-            var root = Temp.CreateDirectory();
+            var testInstance = TestAssets.Get("TestLibraryWithConfiguration")
+                                         .CreateInstance()
+                                         .WithSourceFiles()
+                                         .WithRestoreFiles();
 
-            var testLibDir = root.CreateDirectory("TestLibrary");
-            var sourceTestLibDir = Path.Combine(_testProjectsRoot, "TestLibraryWithConfiguration");
+            var packCommand = new PackCommand(configuration: "Test")
+                .WithWorkingDirectory(testInstance.Root);
 
-            CopyProjectToTempDir(sourceTestLibDir, testLibDir);
+            var result = packCommand.Execute();
 
-            var testProject = GetProjectPath(testLibDir);
-            var buildCommand = new PackCommand(testProject, configuration: "Test");
-            var result = buildCommand.Execute();
             result.Should().Pass();
 
-            var outputDir = new DirectoryInfo(Path.Combine(testLibDir.Path, "bin", "Test"));
-            outputDir.Should().Exist();
-            outputDir.Should().HaveFiles(new [] { "TestLibrary.1.0.0.nupkg" , "TestLibrary.1.0.0.symbols.nupkg" });
+            var outputDir = testInstance.Root
+                                        .GetDirectory("bin", "Test");
+
+            outputDir.Should().Exist()
+                          .And.HaveFiles(new [] 
+                                            { 
+                                                "TestLibraryWithConfiguration.1.0.0.nupkg", 
+                                                "TestLibraryWithConfiguration.1.0.0.symbols.nupkg" 
+                                            });
         }
 
         [Fact]
         public void OutputsPackagesFlatIntoOutputDirWhenOutputParameterIsPassed()
         {
-            var root = Temp.CreateDirectory();
+            var testInstance = TestAssets.Get("TestLibraryWithConfiguration")
+                .CreateInstance()
+                .WithSourceFiles()
+                .WithBuildFiles()
+                .WithRestoreFiles();
 
-            var testLibDir = root.CreateDirectory("TestLibrary");
-            var sourceTestLibDir = Path.Combine(_testProjectsRoot, "TestLibraryWithConfiguration");
+            var outputDir = testInstance.Root
+                                        .GetDirectory("bin2");
 
-            CopyProjectToTempDir(sourceTestLibDir, testLibDir);
+            var packCommand = new PackCommand(output: outputDir.FullName)
+                .WithWorkingDirectory(testInstance.Root)
+                .Execute()
+                .Should().Pass();
 
-            var outputDir = new DirectoryInfo(Path.Combine(testLibDir.Path, "bin2"));
-            var testProject = GetProjectPath(testLibDir);
-            var buildCommand = new PackCommand(testProject, output: outputDir.FullName);
-            var result = buildCommand.Execute();
-            result.Should().Pass();
-
-            outputDir.Should().Exist();
-            outputDir.Should().HaveFiles(new[] { "TestLibrary.1.0.0.nupkg", "TestLibrary.1.0.0.symbols.nupkg" });
+            outputDir.Should().Exist()
+                          .And.HaveFiles(new [] 
+                                            { 
+                                                "TestLibraryWithConfiguration.1.0.0.nupkg"
+                                            });
         }
-        
+
         [Fact]
         public void SettingVersionSuffixFlag_ShouldStampAssemblyInfoInOutputAssemblyAndPackage()
         {
-            var testInstance = TestAssetsManager.CreateTestInstance("TestLibraryWithConfiguration")
-                                                .WithLockFiles();
+            var testInstance = TestAssets.Get("TestLibraryWithConfiguration")
+                .CreateInstance()
+                .WithSourceFiles()
+                .WithRestoreFiles();
 
-            var cmd = new PackCommand(Path.Combine(testInstance.TestRoot, Project.FileName),  versionSuffix: "85");
-            cmd.Execute().Should().Pass();
+            new PackCommand(versionSuffix: "85")
+                .WithWorkingDirectory(testInstance.Root.FullName)
+                .WithConfiguration("Debug")
+                .Execute()
+                .Should().Pass();
 
-            var output = Path.Combine(testInstance.TestRoot, "bin", "Debug", DefaultFramework, "TestLibraryWithConfiguration.dll");
-            var informationalVersion = PeReaderUtils.GetAssemblyAttributeValue(output, "AssemblyInformationalVersionAttribute");
+            var output = testInstance.Root
+                                     .GetDirectory("bin", "Debug", DefaultLibraryFramework)
+                                     .GetFile("TestLibraryWithConfiguration.dll");
             
-            informationalVersion.Should().NotBeNull();
-            informationalVersion.Should().BeEquivalentTo("1.0.0-85");
+            var informationalVersion = PeReaderUtils.GetAssemblyAttributeValue(output.FullName, "AssemblyInformationalVersionAttribute");
+
+            informationalVersion.Should().NotBeNull()
+                                .And.BeEquivalentTo("1.0.0-85");
+
+            var outputPackage = testInstance.Root
+                                            .GetDirectory("bin", "Debug")
+                                            .GetFile("TestLibraryWithConfiguration.1.0.0-85.nupkg");
             
-            var outputPackage = Path.Combine(testInstance.TestRoot, "bin", "Debug", "TestLibraryWithConfiguration.1.0.0-85.nupkg");
-            File.Exists(outputPackage).Should().BeTrue(outputPackage);
+            outputPackage.Should().Exist();
+        }
+
+        [Fact(Skip="https://github.com/dotnet/cli/issues/4486")]
+        public void HasIncludedFiles()
+        {
+            var testInstance = TestAssets.Get("EndToEndTestApp")
+                .CreateInstance()
+                .WithSourceFiles()
+                .WithRestoreFiles()
+                .WithBuildFiles();
+
+            new PackCommand()
+                .WithWorkingDirectory(testInstance.Root)
+                .Execute()
+                .Should().Pass();
+
+            var outputPackage = testInstance.Root
+                                            .GetDirectory("bin", "Debug")
+                                            .GetFile("EndToEndTestApp.1.0.0.nupkg");
+            
+            outputPackage.Should().Exist();
+
+            ZipFile.Open(outputPackage.FullName, ZipArchiveMode.Read)
+                .Entries
+                .Should().Contain(e => e.FullName == "packfiles/pack1.txt")
+                     .And.Contain(e => e.FullName == "newpath/pack2.txt")
+                     .And.Contain(e => e.FullName == "anotherpath/pack2.txt");
+        }
+
+        [Fact(Skip="https://github.com/dotnet/cli/issues/4487")]
+        public void PackAddsCorrectFilesForProjectsWithOutputNameSpecified()
+        {
+            var testInstance = TestAssets.Get("LibraryWithOutputAssemblyName")
+                    .CreateInstance()
+                    .WithSourceFiles()
+                    .WithRestoreFiles();
+
+            new PackCommand()
+                .WithWorkingDirectory(testInstance.Root)
+                .Execute()
+                .Should().Pass();
+
+            // netstandard1.5 is a workaround for https://github.com/dotnet/sdk/issues/318
+            var outputPackage = testInstance.Root
+                                            .GetDirectory("bin", "Debug", "netstandard1.5")
+                                            .GetFile("LibraryWithOutputAssemblyName.1.0.0.nupkg");
+            
+            outputPackage.Should().Exist();
+
+            ZipFile.Open(outputPackage.FullName, ZipArchiveMode.Read)
+                .Entries
+                .Should().Contain(e => e.FullName == "lib/netstandard1.5/MyLibrary.dll");
+
+            var symbolsPackage = testInstance.Root
+                                             .GetDirectory("bin", "Debug")
+                                             .GetFile("LibraryWithOutputAssemblyName.1.0.0.symbols.nupkg");
+            
+            symbolsPackage.Should().Exist();
+
+            ZipFile.Open(symbolsPackage.FullName, ZipArchiveMode.Read)
+                .Entries
+                .Should().Contain(e => e.FullName == "lib/netstandard1.5/MyLibrary.dll")
+                     .And.Contain(e => e.FullName == "lib/netstandard1.5/MyLibrary.pdb");
         }
 
         [Fact]
-        public void HasBuildOutputWhenUsingBuildBasePath()
+        public void PackWorksWithLocalProjectJson()
         {
-            var testInstance = TestAssetsManager.CreateTestInstance("TestLibraryWithConfiguration")
-                                                   .WithLockFiles();
+            var testInstance = TestAssets.Get("TestAppSimple")
+                .CreateInstance()
+                .WithSourceFiles()
+                .WithRestoreFiles();
 
-            var cmd = new PackCommand(Path.Combine(testInstance.TestRoot, Project.FileName), buildBasePath: "buildBase");
-            cmd.Execute().Should().Pass();
+            new PackCommand()
+                .WithWorkingDirectory(testInstance.Root)
+                .Execute()
+                .Should().Pass();
+        }
 
-            var outputPackage = Path.Combine(testInstance.TestRoot, "bin", "Debug", "TestLibraryWithConfiguration.1.0.0.nupkg");
-            File.Exists(outputPackage).Should().BeTrue(outputPackage);
+        [Fact]
+        public void HasServiceableFlagWhenArgumentPassed()
+        {
+            var testInstance = TestAssets.Get("TestLibraryWithConfiguration")
+                .CreateInstance()
+                .WithSourceFiles()
+                .WithRestoreFiles()
+                .WithBuildFiles();
 
-            var zip = ZipFile.Open(outputPackage, ZipArchiveMode.Read);
-            zip.Entries.Should().Contain(e => e.FullName == "lib/netstandardapp1.5/TestLibraryWithConfiguration.dll");
+            var packCommand = new PackCommand(configuration: "Debug", serviceable: true)
+                                    .WithWorkingDirectory(testInstance.Root);
+
+            var result = packCommand.Execute();
+
+            result.Should().Pass();
+
+            var outputDir = testInstance.Root.GetDirectory("bin", "Debug");
+
+            outputDir.Should().Exist()
+                          .And.HaveFile("TestLibraryWithConfiguration.1.0.0.nupkg");
+
+            var outputPackage = outputDir.GetFile("TestLibraryWithConfiguration.1.0.0.nupkg");
+
+            var zip = ZipFile.Open(outputPackage.FullName, ZipArchiveMode.Read);
+
+            zip.Entries.Should().Contain(e => e.FullName == "TestLibraryWithConfiguration.nuspec");
+
+            var manifestReader = new StreamReader(zip.Entries.First(e => e.FullName == "TestLibraryWithConfiguration.nuspec").Open());
+
+            var nuspecXml = XDocument.Parse(manifestReader.ReadToEnd());
+
+            var node = nuspecXml.Descendants().Single(e => e.Name.LocalName == "serviceable");
+
+            Assert.Equal("true", node.Value);
+        }
+
+        [Fact]
+        public void ItPacksAppWhenRestoringToSpecificPackageDirectory()
+        {
+            var rootPath = TestAssets.CreateTestDirectory().FullName;
+            var rootDir = new DirectoryInfo(rootPath);
+
+            string dir = "pkgs";
+            string args = $"--packages {dir}";
+
+            string newArgs = $"console -o \"{rootPath}\"";
+            new NewCommandShim()
+                .WithWorkingDirectory(rootPath)
+                .Execute(newArgs)
+                .Should()
+                .Pass();
+
+            new RestoreCommand()
+                .WithWorkingDirectory(rootPath)
+                .Execute(args)
+                .Should()
+                .Pass();
+
+            new PackCommand()
+                .WithWorkingDirectory(rootPath)
+                .ExecuteWithCapturedOutput()
+                .Should()
+                .Pass();
+
+            rootDir
+                .GetDirectory("bin")
+                .Should().HaveFilesMatching("*.nupkg", SearchOption.AllDirectories);
         }
 
         private void CopyProjectToTempDir(string projectDir, TempDirectory tempDir)

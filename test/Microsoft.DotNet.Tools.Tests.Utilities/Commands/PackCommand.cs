@@ -14,6 +14,7 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
         private string _tempOutputDirectory;
         private string _configuration;
         private string _versionSuffix;
+        private bool _serviceable;
 
         private string OutputOption
         {
@@ -64,13 +65,31 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             }
         }
 
+        private string ServiceableOption
+        {
+            get
+            {
+                return _serviceable ?
+                                $"--serviceable" :
+                                "";
+            }
+        }
+
+        public PackCommand WithConfiguration(string configuration)
+        {
+            _configuration = configuration;
+
+            return this;
+        }
+
         public PackCommand(
-            string projectPath,
+            string projectPath = "",
             string output = "",
             string buildBasePath = "",
             string tempOutput="", 
             string configuration="", 
-            string versionSuffix="")
+            string versionSuffix="",
+            bool serviceable = false)
             : base("dotnet")
         {
             _projectPath = projectPath;
@@ -79,6 +98,7 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             _tempOutputDirectory = tempOutput;
             _configuration = configuration;
             _versionSuffix = versionSuffix;
+            _serviceable = serviceable;
         }
 
         public override CommandResult Execute(string args = "")
@@ -87,9 +107,15 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             return base.Execute(args);
         }
 
+        public override CommandResult ExecuteWithCapturedOutput(string args = "")
+        {
+            args = $"pack {BuildArgs()} {args}";
+            return base.ExecuteWithCapturedOutput(args);
+        }
+
         private string BuildArgs()
         {
-            return $"{_projectPath} {OutputOption} {BuildBasePathOption} {TempOutputOption} {ConfigurationOption} {VersionSuffixOption}";
+            return $"{_projectPath} {OutputOption} {BuildBasePathOption} {TempOutputOption} {ConfigurationOption} {VersionSuffixOption} {ServiceableOption}";
         }
     }
 }

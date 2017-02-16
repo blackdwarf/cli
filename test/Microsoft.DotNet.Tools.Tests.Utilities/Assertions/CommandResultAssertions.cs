@@ -55,8 +55,17 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
 
         public AndConstraint<CommandResultAssertions> HaveStdOutContaining(string pattern)
         {
-            Execute.Assertion.ForCondition(_commandResult.StdOut.Contains(pattern))
+            Execute.Assertion
+                .ForCondition(_commandResult.StdOut.Contains(pattern))
                 .FailWith(AppendDiagnosticsTo($"The command output did not contain expected result: {pattern}{Environment.NewLine}"));
+                
+            return new AndConstraint<CommandResultAssertions>(this);
+        }
+
+        public AndConstraint<CommandResultAssertions> HaveStdOutContainingIgnoreCase(string pattern)
+        {
+            Execute.Assertion.ForCondition(_commandResult.StdOut.IndexOf(pattern, StringComparison.OrdinalIgnoreCase) >= 0)
+                .FailWith(AppendDiagnosticsTo($"The command output did not contain expected result (ignoring case): {pattern}{Environment.NewLine}"));
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
@@ -78,6 +87,13 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
         {
             Execute.Assertion.ForCondition(_commandResult.StdErr.Contains(pattern))
                 .FailWith(AppendDiagnosticsTo($"The command error output did not contain expected result: {pattern}{Environment.NewLine}"));
+            return new AndConstraint<CommandResultAssertions>(this);
+        }
+
+        public AndConstraint<CommandResultAssertions> NotHaveStdErrContaining(string pattern)
+        {
+            Execute.Assertion.ForCondition(!_commandResult.StdErr.Contains(pattern))
+                .FailWith(AppendDiagnosticsTo($"The command error output contained a result it should not have contained: {pattern}{Environment.NewLine}"));
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
@@ -107,21 +123,22 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             return s + $"{Environment.NewLine}" +
                        $"File Name: {_commandResult.StartInfo.FileName}{Environment.NewLine}" +
                        $"Arguments: {_commandResult.StartInfo.Arguments}{Environment.NewLine}" +
+                       $"WorkingDir:: {_commandResult.StartInfo.WorkingDirectory}{Environment.NewLine}" +
                        $"Exit Code: {_commandResult.ExitCode}{Environment.NewLine}" +
                        $"StdOut:{Environment.NewLine}{_commandResult.StdOut}{Environment.NewLine}" +
                        $"StdErr:{Environment.NewLine}{_commandResult.StdErr}{Environment.NewLine}"; ;
         }
 		
-		public AndConstraint<CommandResultAssertions> HaveSkippedProjectCompilation(string skippedProject)
+		public AndConstraint<CommandResultAssertions> HaveSkippedProjectCompilation(string skippedProject, string frameworkFullName)
         {
-            _commandResult.StdOut.Should().Contain($"Project {skippedProject} (.NETStandardApp,Version=v1.5) was previously compiled. Skipping compilation.");
+            _commandResult.StdOut.Should().Contain($"Project {skippedProject} ({frameworkFullName}) was previously compiled. Skipping compilation.");
 
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
-        public AndConstraint<CommandResultAssertions> HaveCompiledProject(string compiledProject)
+        public AndConstraint<CommandResultAssertions> HaveCompiledProject(string compiledProject, string frameworkFullName)
         {
-            _commandResult.StdOut.Should().Contain($"Project {compiledProject} (.NETStandardApp,Version=v1.5) will be compiled");
+            _commandResult.StdOut.Should().Contain($"Project {compiledProject} ({frameworkFullName}) will be compiled");
 
             return new AndConstraint<CommandResultAssertions>(this);
         }

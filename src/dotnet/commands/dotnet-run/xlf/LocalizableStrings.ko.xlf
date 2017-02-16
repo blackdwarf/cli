@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ko" original="src/dotnet/commands/dotnet-run/LocalizableStrings.resx">
+    <body>
+      <group id="src/dotnet/commands/dotnet-run/LocalizableStrings.resx" />
+      <trans-unit id="AppFullName">
+        <source>.NET Run Command</source>
+        <target state="translated">.NET 실행 명령</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AppDescription">
+        <source>Command used to run .NET apps</source>
+        <target state="translated">.NET 앱을 실행하는 데 사용하는 명령입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CommandOptionConfigurationDescription">
+        <source>Configuration to use for building the project. Default for most projects is "Debug".</source>
+        <target state="translated">프로젝트 빌드에 사용할 구성입니다. 대부분의 프로젝트에서 기본값은 "Debug"입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CommandOptionFramework">
+        <source>FRAMEWORK</source>
+        <target state="translated">FRAMEWORK</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CommandOptionFrameworkDescription">
+        <source>Build and run the app using the specified framework. The framework has to be specified in the project file. </source>
+        <target state="translated">지정된 프레임워크를 사용하여 앱을 빌드 및 실행합니다. 프로젝트 파일에서 프레임워크를 지정해야 합니다. </target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CommandOptionProjectDescription">
+        <source>The path to the project file to run (defaults to the current directory if there is only one project).</source>
+        <target state="translated">실행할 프로젝트 파일의 경로입니다(프로젝트가 하나만 있는 경우 현재 디렉터리로 기본 설정됨).</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandException">
+        <source>The build failed. Please fix the build errors and run again.</source>
+        <target state="translated">빌드하지 못했습니다. 빌드 오류를 수정하고 다시 실행하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandMSBuildExtensionsPath">
+        <source>MSBuildExtensionsPath</source>
+        <target state="translated">MSBuildExtensionsPath</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandConfiguration">
+        <source>Configuration</source>
+        <target state="translated">구성</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandTargetFramework">
+        <source>TargetFramework</source>
+        <target state="translated">TargetFramework</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandProjectInstance">
+        <source>RunCommand</source>
+        <target state="translated">RunCommand</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandOutputType">
+        <source>OutputType</source>
+        <target state="translated">OutputType</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandExceptionUnableToRun1">
+        <source>Unable to run your project.</source>
+        <target state="translated">프로젝트를 실행할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandExceptionUnableToRun2">
+        <source>Please ensure you have a runnable project type and ensure 'dotnet run' supports this project.</source>
+        <target state="translated">실행 가능한 프로젝트 형식이 있고 'dotnet run'에서 이 프로젝트를 지원하는지 확인하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandExceptionUnableToRun3">
+        <source>The current OutputType is </source>
+        <target state="translated">현재 OutputType은 다음과 같습니다. </target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandRunArguments">
+        <source>RunArguments</source>
+        <target state="translated">RunArguments</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandRunWorkingDirectory">
+        <source>RunWorkingDirectory</source>
+        <target state="translated">RunWorkingDirectory</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandInvalidOperationException1">
+        <source>Couldn't find a project to run. Ensure a project exists in </source>
+        <target state="translated">실행할 프로젝트를 찾을 수 없습니다. 프로젝트가 </target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandInvalidOperationException2">
+        <source>Or pass the path to the project using --project</source>
+        <target state="translated">에 있는지 확인하거나 --project를 사용하여 프로젝트의 경로를 전달합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandInvalidOperationException3">
+        <source>Specify which project file to use because this </source>
+        <target state="translated">이 </target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandInvalidOperationException4">
+        <source>contains more than one project file.</source>
+        <target state="translated">에는 프로젝트 파일이 두 개 이상 있으므로 사용할 프로젝트 파일을 지정합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunCommandAdditionalArgsHelpText">
+        <source>Arguments passed to the application that is being run.</source>
+        <target state="translated">실행 중인 응용 프로그램에 전달되는 인수입니다.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

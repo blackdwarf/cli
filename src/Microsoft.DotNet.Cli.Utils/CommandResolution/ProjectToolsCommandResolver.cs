@@ -1,40 +1,44 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using Microsoft.DotNet.ProjectModel;
-using Microsoft.DotNet.ProjectModel.Graph;
-using Microsoft.DotNet.ProjectModel.Compilation;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.DotNet.Tools.Common;
 using Microsoft.Extensions.DependencyModel;
-using Microsoft.Extensions.PlatformAbstractions;
+using NuGet.Configuration;
 using NuGet.Frameworks;
-using NuGet.Packaging;
 using NuGet.ProjectModel;
-
-using LockFile = Microsoft.DotNet.ProjectModel.Graph.LockFile;
-using FileFormatException = Microsoft.DotNet.ProjectModel.FileFormatException;
+using NuGet.Versioning;
+using ConcurrencyUtilities = NuGet.Common.ConcurrencyUtilities;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
     public class ProjectToolsCommandResolver : ICommandResolver
     {
-        private static readonly NuGetFramework s_toolPackageFramework = FrameworkConstants.CommonFrameworks.NetStandardApp15;
-        
-        private static readonly CommandResolutionStrategy s_commandResolutionStrategy = 
+        private const string ProjectToolsCommandResolverName = "projecttoolscommandresolver";
+
+        private static readonly NuGetFramework s_toolPackageFramework = FrameworkConstants.CommonFrameworks.NetCoreApp10;
+
+        private static readonly CommandResolutionStrategy s_commandResolutionStrategy =
             CommandResolutionStrategy.ProjectToolsPackage;
-
-        private static readonly string s_currentRuntimeIdentifier = PlatformServices.Default.Runtime.GetLegacyRestoreRuntimeIdentifier();
-
 
         private List<string> _allowedCommandExtensions;
         private IPackagedCommandSpecFactory _packagedCommandSpecFactory;
 
-        public ProjectToolsCommandResolver(IPackagedCommandSpecFactory packagedCommandSpecFactory)
+        private IEnvironmentProvider _environment;
+
+        public ProjectToolsCommandResolver(
+            IPackagedCommandSpecFactory packagedCommandSpecFactory,
+            IEnvironmentProvider environment)
         {
             _packagedCommandSpecFactory = packagedCommandSpecFactory;
+            _environment = environment;
 
-            _allowedCommandExtensions = new List<string>() 
+            _allowedCommandExtensions = new List<string>()
             {
                 FileNameSuffixes.DotNet.DynamicLib
             };
@@ -45,45 +49,62 @@ namespace Microsoft.DotNet.Cli.Utils
             if (commandResolverArguments.CommandName == null
                 || commandResolverArguments.ProjectDirectory == null)
             {
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.InvalidCommandResolverArguments,
+                    ProjectToolsCommandResolverName));
+
+                return null;
+            }
+
+            return ResolveFromProjectTools(commandResolverArguments);
+        }
+
+        private CommandSpec ResolveFromProjectTools(CommandResolverArguments commandResolverArguments)
+        {
+            var projectFactory = new ProjectFactory(_environment);
+
+            var project = projectFactory.GetProject(
+                commandResolverArguments.ProjectDirectory,
+                commandResolverArguments.Framework,
+                commandResolverArguments.Configuration,
+                commandResolverArguments.BuildBasePath,
+                commandResolverArguments.OutputPath);
+
+            if (project == null)
+            {
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.DidNotFindProject, ProjectToolsCommandResolverName));
+
                 return null;
             }
             
-            return ResolveFromProjectTools(
-                commandResolverArguments.CommandName, 
-                commandResolverArguments.CommandArguments.OrEmptyIfNull(),
-                commandResolverArguments.ProjectDirectory);
-        }
-
-        private CommandSpec ResolveFromProjectTools(
-            string commandName, 
-            IEnumerable<string> args,
-            string projectDirectory)
-        {
-            var projectContext = GetProjectContextFromDirectoryForFirstTarget(projectDirectory);
-
-            if (projectContext == null)
-            {
-                return null;
-            }
-
-            var toolsLibraries = projectContext.ProjectFile.Tools.OrEmptyIfNull();
+            var tools = project.GetTools();
 
             return ResolveCommandSpecFromAllToolLibraries(
-                toolsLibraries,
-                commandName, 
-                args,
-                projectContext);
+                tools,
+                commandResolverArguments.CommandName,
+                commandResolverArguments.CommandArguments.OrEmptyIfNull(),
+                project);
         }
 
         private CommandSpec ResolveCommandSpecFromAllToolLibraries(
-            IEnumerable<LibraryRange> toolsLibraries,
+            IEnumerable<SingleProjectInfo> toolsLibraries,
             string commandName,
             IEnumerable<string> args,
-            ProjectContext projectContext)
+            IProject project)
         {
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.ResolvingCommandSpec,
+                ProjectToolsCommandResolverName,
+                toolsLibraries.Count()));
+
             foreach (var toolLibrary in toolsLibraries)
             {
-                var commandSpec = ResolveCommandSpecFromToolLibrary(toolLibrary, commandName, args, projectContext);
+                var commandSpec = ResolveCommandSpecFromToolLibrary(
+                    toolLibrary,
+                    commandName,
+                    args,
+                    project);
 
                 if (commandSpec != null)
                 {
@@ -91,136 +112,234 @@ namespace Microsoft.DotNet.Cli.Utils
                 }
             }
 
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.FailedToResolveCommandSpec,
+                ProjectToolsCommandResolverName));
+
             return null;
         }
 
         private CommandSpec ResolveCommandSpecFromToolLibrary(
-            LibraryRange toolLibraryRange,
+            SingleProjectInfo toolLibraryRange,
             string commandName,
             IEnumerable<string> args,
-            ProjectContext projectContext)
+            IProject project)
         {
-            var nugetPackagesRoot = projectContext.PackagesDirectory;
-            
-            var lockFile = GetToolLockFile(toolLibraryRange, nugetPackagesRoot);
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.AttemptingToResolveCommandSpec,
+                ProjectToolsCommandResolverName,
+                toolLibraryRange.Name));
 
-            var toolLibrary = lockFile.Targets
-                .FirstOrDefault(t => t.TargetFramework.GetShortFolderName().Equals(s_toolPackageFramework.GetShortFolderName()))
+            var possiblePackageRoots = GetPossiblePackageRoots(project).ToList();
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.NuGetPackagesRoot,
+                ProjectToolsCommandResolverName,
+                string.Join(Environment.NewLine, possiblePackageRoots.Select((p) => $"- {p}"))));
+
+            string nugetPackagesRoot;
+            var toolLockFile = GetToolLockFile(toolLibraryRange, possiblePackageRoots, out nugetPackagesRoot);
+
+            if (toolLockFile == null)
+            {
+                return null;
+            }
+
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.FoundToolLockFile,
+                ProjectToolsCommandResolverName,
+                toolLockFile.Path));
+
+            var toolLibrary = toolLockFile.Targets
+                .FirstOrDefault(
+                    t => t.TargetFramework.GetShortFolderName().Equals(s_toolPackageFramework.GetShortFolderName()))
                 ?.Libraries.FirstOrDefault(l => l.Name == toolLibraryRange.Name);
 
             if (toolLibrary == null)
             {
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.LibraryNotFoundInLockFile,
+                    ProjectToolsCommandResolverName));
+
                 return null;
             }
-            
-            var depsFileRoot = Path.GetDirectoryName(lockFile.LockFilePath);
-            var depsFilePath = GetToolDepsFilePath(toolLibraryRange, lockFile, depsFileRoot);
-            
-            return _packagedCommandSpecFactory.CreateCommandSpecFromLibrary(
+
+            var depsFileRoot = Path.GetDirectoryName(toolLockFile.Path);
+
+            var depsFilePath = GetToolDepsFilePath(toolLibraryRange, toolLockFile, depsFileRoot);
+
+            var normalizedNugetPackagesRoot = PathUtility.EnsureNoTrailingDirectorySeparator(nugetPackagesRoot);
+
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.AttemptingToCreateCommandSpec,
+                ProjectToolsCommandResolverName));
+
+            var commandSpec = _packagedCommandSpecFactory.CreateCommandSpecFromLibrary(
                     toolLibrary,
                     commandName,
                     args,
                     _allowedCommandExtensions,
-                    projectContext.PackagesDirectory,
+                    normalizedNugetPackagesRoot,
                     s_commandResolutionStrategy,
-                    depsFilePath);
+                    depsFilePath,
+                    null);
+
+            if (commandSpec == null)
+            {
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.CommandSpecIsNull,
+                    ProjectToolsCommandResolverName));
+            }
+
+            commandSpec?.AddEnvironmentVariablesFromProject(project);
+
+            return commandSpec;
+        }
+
+        private IEnumerable<string> GetPossiblePackageRoots(IProject project)
+        {
+            if (project.TryGetLockFile(out LockFile lockFile))
+            {
+                return lockFile.PackageFolders.Select((packageFolder) => packageFolder.Path);
+            }
+
+            return Enumerable.Empty<string>();
         }
 
         private LockFile GetToolLockFile(
-            LibraryRange toolLibrary,
-            string nugetPackagesRoot)
+            SingleProjectInfo toolLibrary,
+            IEnumerable<string> possibleNugetPackagesRoot,
+            out string nugetPackagesRoot)
         {
-            var lockFilePath = GetToolLockFilePath(toolLibrary, nugetPackagesRoot);
-
-            if (!File.Exists(lockFilePath))
+            foreach (var packagesRoot in possibleNugetPackagesRoot)
             {
-                return null;
+                if (TryGetToolLockFile(toolLibrary, packagesRoot, out LockFile lockFile))
+                {
+                    nugetPackagesRoot = packagesRoot;
+                    return lockFile;
+                }
             }
 
-            LockFile lockFile = null;
+            nugetPackagesRoot = null;
+            return null;
+        }
+
+
+        private static async Task<bool> FileExistsWithLock(string path)
+        {
+            return await ConcurrencyUtilities.ExecuteWithFileLockedAsync(
+                path, 
+                lockedToken => Task.FromResult(File.Exists(path)),
+                CancellationToken.None);
+        }
+
+        private bool TryGetToolLockFile(
+            SingleProjectInfo toolLibrary,
+            string nugetPackagesRoot,
+            out LockFile lockFile)
+        {
+            lockFile = null;
+            var lockFilePath = GetToolLockFilePath(toolLibrary, nugetPackagesRoot);
+
+            if (!FileExistsWithLock(lockFilePath).Result)
+            {
+                return false;
+            }
 
             try
             {
-                lockFile = LockFileReader.Read(lockFilePath, designTime: false);
+                lockFile = new LockFileFormat()
+                    .ReadWithLock(lockFilePath)
+                    .Result;
             }
             catch (FileFormatException ex)
             {
                 throw ex;
             }
 
-            return lockFile;
+            return true;
         }
 
         private string GetToolLockFilePath(
-            LibraryRange toolLibrary,
+            SingleProjectInfo toolLibrary,
             string nugetPackagesRoot)
         {
             var toolPathCalculator = new ToolPathCalculator(nugetPackagesRoot);
 
             return toolPathCalculator.GetBestLockFilePath(
-                toolLibrary.Name, 
-                toolLibrary.VersionRange, 
+                toolLibrary.Name,
+                VersionRange.Parse(toolLibrary.Version),
                 s_toolPackageFramework);
         }
 
-        private ProjectContext GetProjectContextFromDirectoryForFirstTarget(string projectRootPath)
-        {
-            if (projectRootPath == null)
-            {
-                return null;
-            }
-
-            if (!File.Exists(Path.Combine(projectRootPath, Project.FileName)))
-            {
-                return null;
-            }
-
-            var projectContext = ProjectContext.CreateContextForEachTarget(projectRootPath).FirstOrDefault();
-
-            return projectContext;
-        }
-
         private string GetToolDepsFilePath(
-            LibraryRange toolLibrary, 
-            LockFile toolLockFile, 
+            SingleProjectInfo toolLibrary,
+            LockFile toolLockFile,
             string depsPathRoot)
         {
             var depsJsonPath = Path.Combine(
                 depsPathRoot,
                 toolLibrary.Name + FileNameSuffixes.DepsJson);
 
-            EnsureToolJsonDepsFileExists(toolLibrary, toolLockFile, depsJsonPath);
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.ExpectDepsJsonAt,
+                ProjectToolsCommandResolverName,
+                depsJsonPath));
+
+            EnsureToolJsonDepsFileExists(toolLockFile, depsJsonPath, toolLibrary);
 
             return depsJsonPath;
         }
 
         private void EnsureToolJsonDepsFileExists(
-            LibraryRange toolLibrary, 
-            LockFile toolLockFile, 
-            string depsPath)
+            LockFile toolLockFile,
+            string depsPath,
+            SingleProjectInfo toolLibrary)
         {
             if (!File.Exists(depsPath))
             {
-                var projectContext = new ProjectContextBuilder()
-                    .WithLockFile(toolLockFile)
-                    .WithTargetFramework(s_toolPackageFramework.ToString())
-                    .Build();
+                GenerateDepsJsonFile(toolLockFile, depsPath, toolLibrary);
+            }
+        }
 
-                var exporter = projectContext.CreateExporter(Constants.DefaultConfiguration);
+        internal void GenerateDepsJsonFile(
+            LockFile toolLockFile,
+            string depsPath,
+            SingleProjectInfo toolLibrary)
+        {
+            Reporter.Verbose.WriteLine(string.Format(
+                LocalizableStrings.GeneratingDepsJson,
+                depsPath));
 
-                var dependencyContext = new DependencyContextBuilder()
-                    .Build(null, 
-                        null, 
-                        exporter.GetAllExports(), 
-                        true, 
-                        s_toolPackageFramework, 
-                        string.Empty);
+            var dependencyContext = new DepsJsonBuilder()
+                .Build(toolLibrary, null, toolLockFile, s_toolPackageFramework, null);
 
-                using (var fileStream = File.Create(depsPath))
+            var tempDepsFile = Path.GetTempFileName();
+            using (var fileStream = File.Open(tempDepsFile, FileMode.Open, FileAccess.Write))
+            {
+                var dependencyContextWriter = new DependencyContextWriter();
+
+                dependencyContextWriter.Write(dependencyContext, fileStream);
+            }
+
+            try
+            {
+                File.Move(tempDepsFile, depsPath);
+            }
+            catch (Exception e)
+            {
+                Reporter.Verbose.WriteLine(string.Format(
+                    LocalizableStrings.UnableToGenerateDepsJson,
+                    e.Message));
+                
+                try
                 {
-                    var dependencyContextWriter = new DependencyContextWriter();
-
-                    dependencyContextWriter.Write(dependencyContext, fileStream);
+                    File.Delete(tempDepsFile);
+                }
+                catch (Exception e2)
+                {
+                    Reporter.Verbose.WriteLine(string.Format(
+                        LocalizableStrings.UnableToDeleteTemporaryDepsJson,
+                        e2.Message));
                 }
             }
         }
