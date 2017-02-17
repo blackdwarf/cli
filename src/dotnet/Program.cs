@@ -11,10 +11,6 @@ using Microsoft.DotNet.Configurer;
 using Microsoft.DotNet.PlatformAbstractions;
 using Microsoft.DotNet.Tools.Add;
 using Microsoft.DotNet.Tools.Build;
-using Microsoft.DotNet.Tools.Compiler;
-using Microsoft.DotNet.Tools.Compiler.Csc;
-using Microsoft.DotNet.Tools.Compiler.Native;
-using Microsoft.DotNet.Tools.Compiler.Mcg;
 using Microsoft.DotNet.Tools.Clean;
 using Microsoft.DotNet.Tools.Help;
 using Microsoft.DotNet.Tools.List;
@@ -170,20 +166,6 @@ namespace Microsoft.DotNet.Cli
                 command = "help";
             }
 
-            var builtIns = new Dictionary<string, Func<string[], int>>
-            {
-                ["build"] = BuildCommand.Run,
-                ["compile-csc"] = CompileCscCommand.Run,
-                ["help"] = HelpCommand.Run,
-                ["mcg"] = McgCommand.Run,
-                ["new"] = NewCommand.Run,
-                ["pack"] = PackCommand.Run,
-                ["projectmodel-server"] = ProjectModelServerCommand.Run,
-                ["publish"] = PublishCommand.Run,
-                ["restore"] = RestoreCommand.Run,
-                ["run"] = RunCommand.Run,
-                ["test"] = TestCommand.Run
-            };
             telemetryClient.TrackEvent(command, null, null);
 
             int exitCode;
