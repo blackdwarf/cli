@@ -34,28 +34,28 @@ namespace Microsoft.DotNet.Cli
 {
     public class Program
     {
-        private static Dictionary<string, Func<string[], int>> s_builtIns = new Dictionary<string, Func<string[], int>>
-        {
-            ["add"] = AddCommand.Run,
-            ["build"] = BuildCommand.Run,
-            ["cache"] = CacheCommand.Run,
-            ["clean"] = CleanCommand.Run,
-            ["help"] = HelpCommand.Run,
-            ["list"] = ListCommand.Run,
-            ["migrate"] = MigrateCommand.Run,
-            ["msbuild"] = MSBuildCommand.Run,
-            ["new"] = NewCommandShim.Run,
-            ["nuget"] = NuGetCommand.Run,
-            ["pack"] = PackCommand.Run,
-            ["publish"] = PublishCommand.Run,
-            ["remove"] = RemoveCommand.Run,
-            ["restore"] = RestoreCommand.Run,
-            ["run"] = RunCommand.Run,
-            ["sln"] = SlnCommand.Run,
-            ["test"] = TestCommand.Run,
-            ["vstest"] = VSTestCommand.Run,
-        };
-
+        // private static Dictionary<string, Func<string[], int>> s_builtIns = new Dictionary<string, Func<string[], int>>
+        // {
+        //     ["add"] = AddCommand.Run,
+        //     ["build"] = BuildCommand.Run,
+        //     ["cache"] = CacheCommand.Run,
+        //     ["clean"] = CleanCommand.Run,
+        //     ["help"] = HelpCommand.Run,
+        //     ["list"] = ListCommand.Run,
+        //     ["migrate"] = MigrateCommand.Run,
+        //     ["msbuild"] = MSBuildCommand.Run,
+        //     ["new"] = NewCommandShim.Run,
+        //     ["nuget"] = NuGetCommand.Run,
+        //     ["pack"] = PackCommand.Run,
+        //     ["publish"] = PublishCommand.Run,
+        //     ["remove"] = RemoveCommand.Run,
+        //     ["restore"] = RestoreCommand.Run,
+        //     ["run"] = RunCommand.Run,
+        //     ["sln"] = SlnCommand.Run,
+        //     ["test"] = TestCommand.Run,
+        //     ["vstest"] = VSTestCommand.Run,
+        // };
+        
         public static int Main(string[] args)
         {
             DebugHelper.HandleDebugSwitch(ref args);
@@ -169,10 +169,12 @@ namespace Microsoft.DotNet.Cli
             telemetryClient.TrackEvent(command, null, null);
 
             int exitCode;
-            Func<string[], int> builtIn;
-            if (s_builtIns.TryGetValue(command, out builtIn))
+            // Func<string[], int> builtIn;
+            // if (s_builtIns.TryGetValue(command, out builtIn))
+            BuiltinConf builtIn;
+            if (BuiltinCommands.Commands.TryGetValue(command, out builtIn))
             {
-                exitCode = builtIn(appArgs.ToArray());
+                exitCode = builtIn.Command(appArgs.ToArray());
             }
             else
             {
