@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -55,49 +56,22 @@ Project modification commands:
 
             CommandLineApplication app = new CommandLineApplication(throwOnUnexpectedArg: false);
             app.Name = "dotnet help";
-            // app.FullName = LocalizableStrings.AppFullName;
-            // app.Description = LocalizableStrings.AppDescription;
-            // app.ArgumentSeparatorHelpText = HelpMessageStrings.MSBuildAdditionalArgsHelpText;
-            // app.HandleRemainingArguments = true;            
-            // app.HelpOption("-h|--help");
+            app.FullName = LocalizableStrings.AppFullName;
+            app.Description = LocalizableStrings.AppDescription;
 
-            CommandArgument commandNameArgument = app.Argument("<COMMAND_NAME", "The command for which to get teh help!!!");
+            CommandArgument commandNameArgument = app.Argument($"<{LocalizableStrings.CommandArgumentName}>", LocalizableStrings.CommandArgumentDescription);
 
             app.OnExecute(() => 
             {
                 Cli.BuiltinConf builtIn;
                 if (Cli.BuiltinCommands.Commands.TryGetValue(commandNameArgument.Value, out builtIn))
                 {
-                    // Reporter.Output.WriteLine(builtIn.DocumentationUrl.ToString());
-                    ProcessStartInfo psInfo;
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        psInfo = new ProcessStartInfo
-                        {
-                            FileName = "cmd",
-                            Arguments = $"/c start {builtIn.DocumentationUrl.ToString()}"
-                        };
-                    }
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    {
-                        psInfo = new ProcessStartInfo
-                        {
-                            FileName = "open",
-                            Arguments = builtIn.DocumentationUrl.ToString()
-                        };
-                    }
-                    else
-                    {
-                        psInfo = new ProcessStartInfo
-                        {
-                            FileName = "xdg-open",
-                            Arguments = builtIn.DocumentationUrl.ToString()
-                        };
-                    }
-
-                    var p = Process.Start(psInfo);
+                    var p = Process.Start(GetProcessStartInfo(builtIn));
                     p.WaitForExit();
-
+                }
+                else
+                {
+                    Reporter.Error.WriteLine(String.Format(LocalizableStrings.CommandDoesNotExist, commandNameArgument.Value));
                 }
                 return 0;
             });
@@ -126,6 +100,37 @@ Project modification commands:
                 string.Empty :
                 $" ({Product.Version})";
             Reporter.Output.WriteLine(Product.LongName + versionString);
+        }
+
+        private static ProcessStartInfo GetProcessStartInfo(Cli.BuiltinConf builtIn)
+        {
+            ProcessStartInfo psInfo;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                psInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd",
+                    Arguments = $"/c start {builtIn.DocumentationUrl.ToString()}"
+                };
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                psInfo = new ProcessStartInfo
+                {
+                    FileName = "open",
+                    Arguments = builtIn.DocumentationUrl.ToString()
+                };
+            }
+            else
+            {
+                psInfo = new ProcessStartInfo
+                {
+                    FileName = "xdg-open",
+                    Arguments = builtIn.DocumentationUrl.ToString()
+                };
+            }
+            return psInfo;
+
         }
     }
 }
