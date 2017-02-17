@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.DotNet.Tools.Add;
 using Microsoft.DotNet.Tools.Build;
 using Microsoft.DotNet.Tools.Clean;
@@ -28,7 +29,7 @@ namespace Microsoft.DotNet.Cli
             ["add"] = new BuiltinConf
             {
                 Command = AddCommand.Run,
-                DocumentationUrl = new Uri("")
+                DocumentationUrl = new Uri("https://aka.ms/dotnet-add")
             },
             ["build"] = new BuiltinConf
             {
@@ -38,7 +39,7 @@ namespace Microsoft.DotNet.Cli
             ["cache"] = new BuiltinConf
             {
                 Command = CacheCommand.Run,
-                DocumentationUrl = new Uri("")
+                DocumentationUrl = new Uri("https://aka.ms/dotnet-cache")
             },
             ["clean"] = new BuiltinConf 
             {
@@ -53,7 +54,7 @@ namespace Microsoft.DotNet.Cli
             ["list"] = new BuiltinConf
             {
                 Command = ListCommand.Run,
-                DocumentationUrl = new Uri("")
+                DocumentationUrl = new Uri("https://aka.ms/dotnet-list")
             },
             ["migrate"] = new BuiltinConf
             {
@@ -108,12 +109,12 @@ namespace Microsoft.DotNet.Cli
             },
             ["test"] = new BuiltinConf
             {
-                Command = TestCommand.Run,,
+                Command = TestCommand.Run,
                 DocumentationUrl = new Uri("https://aka.ms/dotnet-test")
             },
             ["vstest"] = new BuiltinConf
             {
-                Command = VSTestCommand.Run,,
+                Command = VSTestCommand.Run,
                 DocumentationUrl = new Uri("https://aka.ms/dotnet-vstest")
             }
         };

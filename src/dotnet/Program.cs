@@ -217,9 +217,9 @@ namespace Microsoft.DotNet.Cli
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
-        internal static bool TryGetBuiltInCommand(string commandName, out Func<string[], int> builtInCommand)
+        internal static bool TryGetBuiltInCommand(string commandName, out BuiltinConf builtInCommand)
         {
-            return s_builtIns.TryGetValue(commandName, out builtInCommand);
+            return BuiltinCommands.Commands.TryGetValue(commandName, out builtInCommand);
         }
 
         private static void PrintVersion()

@@ -1,7 +1,10 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using Microsoft.DotNet.Cli.CommandLine;
 using Microsoft.DotNet.Cli.Utils;
 
 namespace Microsoft.DotNet.Tools.Help
@@ -49,6 +52,56 @@ Project modification commands:
 
         public static int Run(string[] args)
         {
+
+            CommandLineApplication app = new CommandLineApplication(throwOnUnexpectedArg: false);
+            app.Name = "dotnet help";
+            // app.FullName = LocalizableStrings.AppFullName;
+            // app.Description = LocalizableStrings.AppDescription;
+            // app.ArgumentSeparatorHelpText = HelpMessageStrings.MSBuildAdditionalArgsHelpText;
+            // app.HandleRemainingArguments = true;            
+            // app.HelpOption("-h|--help");
+
+            CommandArgument commandNameArgument = app.Argument("<COMMAND_NAME", "The command for which to get teh help!!!");
+
+            app.OnExecute(() => 
+            {
+                Cli.BuiltinConf builtIn;
+                if (Cli.BuiltinCommands.Commands.TryGetValue(commandNameArgument.Value, out builtIn))
+                {
+                    // Reporter.Output.WriteLine(builtIn.DocumentationUrl.ToString());
+                    ProcessStartInfo psInfo;
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        psInfo = new ProcessStartInfo
+                        {
+                            FileName = "cmd",
+                            Arguments = $"/c start {builtIn.DocumentationUrl.ToString()}"
+                        };
+                    }
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        psInfo = new ProcessStartInfo
+                        {
+                            FileName = "open",
+                            Arguments = builtIn.DocumentationUrl.ToString()
+                        };
+                    }
+                    else
+                    {
+                        psInfo = new ProcessStartInfo
+                        {
+                            FileName = "xdg-open",
+                            Arguments = builtIn.DocumentationUrl.ToString()
+                        };
+                    }
+
+                    var p = Process.Start(psInfo);
+                    p.WaitForExit();
+
+                }
+                return 0;
+            });
+            
             if (args.Length == 0)
             {
                 PrintHelp();
@@ -56,7 +109,8 @@ Project modification commands:
             }
             else
             {
-                return Cli.Program.Main(new[] { args[0], "--help" });
+                // return Cli.Program.Main(new[] { args[0], "--help" });
+                return app.Execute(args);
             }
         }
 
