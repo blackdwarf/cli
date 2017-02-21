@@ -24,106 +24,106 @@ namespace Microsoft.DotNet.Cli
 {
     public static class BuiltinCommands
     {
-        public static Dictionary<string, BuiltinConf> Commands = new Dictionary<string, BuiltinConf>
+        public static Dictionary<string, BuiltInCommandMetadata> Commands = new Dictionary<string, BuiltInCommandMetadata>
         {
-            ["add"] = new BuiltinConf
+            ["add"] = new BuiltInCommandMetadata
             {
                 Command = AddCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-add")
+                DocLink = new Uri("https://aka.ms/dotnet-add")
             },
-            ["build"] = new BuiltinConf
+            ["build"] = new BuiltInCommandMetadata
             {
                 Command = BuildCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-build")
+                DocLink = new Uri("https://aka.ms/dotnet-build")
             },
-            ["cache"] = new BuiltinConf
+            ["cache"] = new BuiltInCommandMetadata
             {
                 Command = CacheCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-cache")
+                DocLink = new Uri("https://aka.ms/dotnet-cache")
             },
-            ["clean"] = new BuiltinConf 
+            ["clean"] = new BuiltInCommandMetadata 
             {
                 Command = CleanCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-clean")
+                DocLink = new Uri("https://aka.ms/dotnet-clean")
             },
-            ["help"] = new BuiltinConf
+            ["help"] = new BuiltInCommandMetadata
             {
                 Command = HelpCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-help")
+                DocLink = new Uri("https://aka.ms/dotnet-help")
             },
-            ["list"] = new BuiltinConf
+            ["list"] = new BuiltInCommandMetadata
             {
                 Command = ListCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-list")
+                DocLink = new Uri("https://aka.ms/dotnet-list")
             },
-            ["migrate"] = new BuiltinConf
+            ["migrate"] = new BuiltInCommandMetadata
             {
                 Command = MigrateCommand.Run,
-                DocumentationUrl = new Uri("http://aka.ms/dotnet-migrate")
+                DocLink = new Uri("http://aka.ms/dotnet-migrate")
 
             },
-            ["msbuild"] = new BuiltinConf
+            ["msbuild"] = new BuiltInCommandMetadata
             {
                 Command = MSBuildCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-msbuild")
+                DocLink = new Uri("https://aka.ms/dotnet-msbuild")
             },
-            ["new"] = new BuiltinConf
+            ["new"] = new BuiltInCommandMetadata
             {
                 Command = NewCommandShim.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-new")
+                DocLink = new Uri("https://aka.ms/dotnet-new")
             },
-            ["nuget"] = new BuiltinConf
+            ["nuget"] = new BuiltInCommandMetadata
             {
                 Command = NuGetCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-nuget")
+                DocLink = new Uri("https://aka.ms/dotnet-nuget")
             },
-            ["pack"] = new BuiltinConf
+            ["pack"] = new BuiltInCommandMetadata
             {
                 Command = PackCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-pack")
+                DocLink = new Uri("https://aka.ms/dotnet-pack")
             },
-            ["publish"] = new BuiltinConf
+            ["publish"] = new BuiltInCommandMetadata
             {
                 Command = PublishCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-publish")
+                DocLink = new Uri("https://aka.ms/dotnet-publish")
             },
-            ["remove"] = new BuiltinConf
+            ["remove"] = new BuiltInCommandMetadata
             {
                 Command = RemoveCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-remove")
+                DocLink = new Uri("https://aka.ms/dotnet-remove")
             },
-            ["restore"] = new BuiltinConf
+            ["restore"] = new BuiltInCommandMetadata
             {
                 Command = RestoreCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-restore")
+                DocLink = new Uri("https://aka.ms/dotnet-restore")
             },
-            ["run"] = new BuiltinConf
+            ["run"] = new BuiltInCommandMetadata
             {
                 Command = RunCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-run")
+                DocLink = new Uri("https://aka.ms/dotnet-run")
             },
-            ["sln"] = new BuiltinConf
+            ["sln"] = new BuiltInCommandMetadata
             {
                 Command = SlnCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-sln")
+                DocLink = new Uri("https://aka.ms/dotnet-sln")
             },
-            ["test"] = new BuiltinConf
+            ["test"] = new BuiltInCommandMetadata
             {
                 Command = TestCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-test")
+                DocLink = new Uri("https://aka.ms/dotnet-test")
             },
-            ["vstest"] = new BuiltinConf
+            ["vstest"] = new BuiltInCommandMetadata
             {
                 Command = VSTestCommand.Run,
-                DocumentationUrl = new Uri("https://aka.ms/dotnet-vstest")
+                DocLink = new Uri("https://aka.ms/dotnet-vstest")
             }
         };
 
     }
 
-    public class BuiltinConf
+    public class BuiltInCommandMetadata
     {
         public Func<string[], int> Command { get; set; }
-        public Uri DocumentationUrl { get; set; }
+        public Uri DocLink { get; set; }
     }
 }

@@ -63,7 +63,7 @@ Project modification commands:
 
             app.OnExecute(() => 
             {
-                Cli.BuiltinConf builtIn;
+                Cli.BuiltInCommandMetadata builtIn;
                 if (Cli.BuiltinCommands.Commands.TryGetValue(commandNameArgument.Value, out builtIn))
                 {
                     var p = Process.Start(GetProcessStartInfo(builtIn));
@@ -102,7 +102,7 @@ Project modification commands:
             Reporter.Output.WriteLine(Product.LongName + versionString);
         }
 
-        private static ProcessStartInfo GetProcessStartInfo(Cli.BuiltinConf builtIn)
+        private static ProcessStartInfo GetProcessStartInfo(Cli.BuiltInCommandMetadata builtIn)
         {
             ProcessStartInfo psInfo;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -110,7 +110,7 @@ Project modification commands:
                 psInfo = new ProcessStartInfo
                 {
                     FileName = "cmd",
-                    Arguments = $"/c start {builtIn.DocumentationUrl.ToString()}"
+                    Arguments = $"/c start {builtIn.DocLink.ToString()}"
                 };
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -118,7 +118,7 @@ Project modification commands:
                 psInfo = new ProcessStartInfo
                 {
                     FileName = "open",
-                    Arguments = builtIn.DocumentationUrl.ToString()
+                    Arguments = builtIn.DocLink.ToString()
                 };
             }
             else
@@ -126,7 +126,7 @@ Project modification commands:
                 psInfo = new ProcessStartInfo
                 {
                     FileName = "xdg-open",
-                    Arguments = builtIn.DocumentationUrl.ToString()
+                    Arguments = builtIn.DocLink.ToString()
                 };
             }
             return psInfo;

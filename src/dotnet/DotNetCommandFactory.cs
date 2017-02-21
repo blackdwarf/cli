@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.Cli
         	NuGetFramework framework = null, 
         	string configuration = Constants.DefaultConfiguration)
         {
-            BuiltinConf builtInCommand;
+            BuiltInCommandMetadata builtInCommand;
             if (!_alwaysRunOutOfProc && Program.TryGetBuiltInCommand(commandName, out builtInCommand))
             {
                 Debug.Assert(framework == null, "BuiltInCommand doesn't support the 'framework' argument.");

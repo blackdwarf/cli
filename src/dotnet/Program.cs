@@ -171,7 +171,7 @@ namespace Microsoft.DotNet.Cli
             int exitCode;
             // Func<string[], int> builtIn;
             // if (s_builtIns.TryGetValue(command, out builtIn))
-            BuiltinConf builtIn;
+            BuiltInCommandMetadata builtIn;
             if (BuiltinCommands.Commands.TryGetValue(command, out builtIn))
             {
                 exitCode = builtIn.Command(appArgs.ToArray());
@@ -217,7 +217,7 @@ namespace Microsoft.DotNet.Cli
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
-        internal static bool TryGetBuiltInCommand(string commandName, out BuiltinConf builtInCommand)
+        internal static bool TryGetBuiltInCommand(string commandName, out BuiltInCommandMetadata builtInCommand)
         {
             return BuiltinCommands.Commands.TryGetValue(commandName, out builtInCommand);
         }
