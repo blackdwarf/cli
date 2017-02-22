@@ -4,17 +4,17 @@
 
 This repo contains the source code for cross-platform [.NET Core](http://github.com/dotnet/core) command line toolchain. It contains the implementation of each command, the native packages for various supported platforms as well as documentation. 
 
-Preview 4 release - MSBuild based tools
+RC 4 release - MSBuild based tools
 ---------------------------------------
-As was outlined in the ["Changes to project.json" blog post](https://blogs.msdn.microsoft.com/dotnet/2016/05/23/changes-to-project-json/), we have started work to move away from project.json to csproj and MSBuild. All the new `latest` releases from this repo (from `rel/1.0.0` branch) are MSBuild-enabled tools. 
+As was outlined in the ["Changes to project.json" blog post](https://blogs.msdn.microsoft.com/dotnet/2016/05/23/changes-to-project-json/), we have started work to move away from project.json to csproj and MSBuild. All the new `latest` releases from this repo (from `rel/1.0.0` branch) are MSBuild-enabled tools.
 
-The current official release of the csproj-enabled CLI tools is **CLI Preview 4**. 
+The current official release of the csproj-enabled CLI tools is **CLI RC 4**. 
 
 There are a couple of things to keep in mind:
 
-* Preview 4 CLI bits are still **in development** so some rough edges are to be expected. 
-* Preview 4 bits **do not support** project.json so you will have to either keep Preview 2 tools around or migrate your project or add a global.json file to your project to target preview2. You can find more information on this using the [project.json to csproj instructions](https://github.com/dotnet/cli/blob/rel/1.0.0/Documentation/ProjectJsonToCSProj.md). 
-* Preview 4 refers to the **CLI tools only** and does not cover Visual Studio, VS Code or Visual Studio for Mac. 
+* RC 4 CLI bits are still **in development** so some rough edges are to be expected. 
+* RC 4 bits **do not support** project.json so you will have to either keep Preview 2 tools around or migrate your project or add a global.json file to your project to target preview2. You can find more information on this using the [project.json to csproj instructions](https://github.com/dotnet/cli/blob/rel/1.0.0/Documentation/ProjectJsonToCSProj.md). 
+* RC 4 refers to the **CLI tools only** and does not cover Visual Studio, VS Code or Visual Studio for Mac. 
 * We welcome any and all issues that relate to MSBuild-based tools, so feel free to try them out and leave comments and file any bugs/problems.
 
 ### Download links
@@ -33,45 +33,39 @@ This project has adopted the code of conduct defined by the [Contributor Covenan
 Build Status
 ------------
 
-<<<<<<< HEAD
-|Ubuntu 14.04 |Windows x64 |Windows x86 |Mac OS X |CentOS 7.1 |RHEL 7.2 |
-|:------:|:------:|:------:|:------:|:------:|:------:|
-|![](https://devdiv.visualstudio.com/DefaultCollection/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/392/badge)|![](https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/3234/badge)|![](https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/3236/badge)|![](https://devdiv.visualstudio.com/DefaultCollection/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/391/badge) |![](https://devdiv.visualstudio.com/DefaultCollection/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/565/badge) |![](https://devdiv.visualstudio.com/DefaultCollection/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/1199/badge)|
-=======
 |Ubuntu 14.04 / Linux Mint 17 |Ubuntu 16.04 |Debian 8.2 |Windows x64 |Windows x86 |Mac OS X |CentOS 7.1 / Oracle Linux 7.1 |RHEL 7.2 |OpenSUSE 13.2 |Fedora 23|
 |:------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|
 |[![][ubuntu-14.04-build-badge]][ubuntu-14.04-build]|[![][ubuntu-16.04-build-badge]][ubuntu-16.04-build]|[![][debian-8.2-build-badge]][debian-8.2-build]|[![][win-x64-build-badge]][win-x64-build]|[![][win-x86-build-badge]][win-x86-build]|[![][osx-build-badge]][osx-build]|[![][centos-build-badge]][centos-build]|[![][rhel-build-badge]][rhel-build]|[![][opensuse-13.2-build-badge]][opensuse-13.2-build]|[![][fedora-23-build-badge]][fedora-23-build]|
 
-[win-x64-build-badge]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/4638/badge
-[win-x64-build]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=4638
+[win-x64-build-badge]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/5449/badge
+[win-x64-build]: https://devdiv.visualstudio.com/DevDiv/_build?_a=completed&definitionId=5449
 
-[win-x86-build-badge]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/4637/badge
-[win-x86-build]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=4637
+[win-x86-build-badge]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/5450/badge
+[win-x86-build]: https://devdiv.visualstudio.com/DevDiv/_build?_a=completed&definitionId=5450
 
-[ubuntu-14.04-build-badge]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/4633/badge
-[ubuntu-14.04-build]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=4633
+[ubuntu-14.04-build-badge]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/5447/badge
+[ubuntu-14.04-build]: https://devdiv.visualstudio.com/DevDiv/_build?_a=completed&definitionId=5447
 
-[ubuntu-16.04-build-badge]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/4635/badge
-[ubuntu-16.04-build]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=4635
+[ubuntu-16.04-build-badge]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/5448/badge
+[ubuntu-16.04-build]: https://devdiv.visualstudio.com/DevDiv/_build?_a=completed&definitionId=5448
 
-[debian-8.2-build-badge]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/4629/badge
-[debian-8.2-build]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=4629
+[debian-8.2-build-badge]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/5442/badge
+[debian-8.2-build]: https://devdiv.visualstudio.com/DevDiv/_build?_a=completed&definitionId=5442
 
-[osx-build-badge]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/4632/badge
-[osx-build]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=4632
+[osx-build-badge]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/5445/badge
+[osx-build]: https://devdiv.visualstudio.com/DevDiv/_build?_a=completed&definitionId=5445
 
-[centos-build-badge]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/4628/badge
-[centos-build]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=4628
+[centos-build-badge]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/5441/badge
+[centos-build]: https://devdiv.visualstudio.com/DevDiv/_build?_a=completed&definitionId=5441
 
-[rhel-build-badge]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/4634/badge
-[rhel-build]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=4634
+[rhel-build-badge]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/5446/badge
+[rhel-build]: https://devdiv.visualstudio.com/DevDiv/_build?_a=completed&definitionId=5446
 
-[opensuse-13.2-build-badge]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/4631/badge
-[opensuse-13.2-build]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=4631
+[opensuse-13.2-build-badge]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/5444/badge
+[opensuse-13.2-build]: https://devdiv.visualstudio.com/DevDiv/_build?_a=completed&definitionId=5444
 
-[fedora-23-build-badge]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/4630/badge
-[fedora-23-build]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=4630
->>>>>>> upstream/master
+[fedora-23-build-badge]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/5443/badge
+[fedora-23-build]: https://devdiv.visualstudio.com/DevDiv/_build?_a=completed&definitionId=5443
 
 Installers and Binaries
 -----------------------
@@ -98,20 +92,9 @@ In order to download just the .NET Core runtime without the SDK, please visit ht
 
 *Note: Our Debian packages are put together slightly differently than the other OS specific installers. Instead of combining everything, we have separate component packages that depend on each other. If you're installing these directly from the .deb files (via dpkg or similar), then you'll need to install the [corresponding Host, Host FX Resolver, and Shared Framework packages](https://github.com/dotnet/core-setup#daily-builds) before installing the Sdk package.*
 
-<<<<<<< HEAD
-|         |Version |.NET Core Installer|.NET Core SDK Installer|.NET Core Binaries|.NET Core SDK Binaries|
-|---------|:------:|:------:|:------:|:------:|:------:|
-|**Windows x64**|[![](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/Windows_x64_Release_version_badge.svg)](https://dotnetcli.blob.core.windows.net/dotnet/dev/dnvm/latest.win.x64.version)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-win-x64.latest.exe)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-dev-win-x64.latest.exe)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-win-x64.latest.zip)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-dev-win-x64.latest.zip)|
-|**Windows x86**|[![](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/Windows_x86_Release_version_badge.svg)](https://dotnetcli.blob.core.windows.net/dotnet/dev/dnvm/latest.win.x86.version)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-win-x86.latest.exe)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-dev-win-x86.latest.exe)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-win-x86.latest.zip)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-dev-win-x86.latest.zip)|
-|**Ubuntu 14.04**|[![](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/Ubuntu_x64_Release_version_badge.svg)](https://dotnetcli.blob.core.windows.net/dotnet/dev/dnvm/latest.ubuntu.x64.version)|*See Below*|*See Below*|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-ubuntu-x64.latest.tar.gz)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-dev-ubuntu-x64.latest.tar.gz)|
-|**Mac OS X**|[![](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/OSX_x64_Release_version_badge.svg)](https://dotnetcli.blob.core.windows.net/dotnet/dev/dnvm/latest.osx.x64.version)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-osx-x64.latest.pkg)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-dev-osx-x64.latest.pkg)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-osx-x64.latest.tar.gz)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-dev-osx-x64.latest.tar.gz)|
-|**CentOS 7.1**|[![](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/CentOS_x64_Release_version_badge.svg)](https://dotnetcli.blob.core.windows.net/dotnet/dev/dnvm/latest.centos.x64.version)|N/A |N/A |[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-centos-x64.latest.tar.gz)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-dev-centos-x64.latest.tar.gz)|
-|**RHEL 7.2**|[![](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/RHEL_x64_Release_version_badge.svg)](https://dotnetcli.blob.core.windows.net/dotnet/dev/dnvm/latest.rhel.x64.version)|N/A |N/A |[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-centos-x64.latest.tar.gz)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-dev-rhel-x64.latest.tar.gz) |
-=======
 [version]: https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/latest.version
 [comment]: # (The latest versions are always the same across all platforms. Just need one to show, so picking win-x64's svg.)
 [version-badge]: https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/Windows_x64_Release_version_badge.svg
->>>>>>> upstream/master
 
 [win-x64-installer]: https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-win-x64.latest.exe
 [win-x64-installer-checksum]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-win-x64.latest.exe.sha
@@ -123,18 +106,10 @@ In order to download just the .NET Core runtime without the SDK, please visit ht
 [win-x86-zip]: https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-win-x86.latest.zip
 [win-x86-zip-checksum]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-win-x86.latest.zip.sha
 
-<<<<<<< HEAD
-|         |Version |Installers|
-|---------|:------:|:------:|:------:|
-|**Shared Host**|[![](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/Ubuntu_x64_Release_version_badge.svg)](https://dotnetcli.blob.core.windows.net/dotnet/dev/dnvm/latest.ubuntu.x64.version)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-host-ubuntu-x64.latest.deb)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-dev-ubuntu-x64.latest.tar.gz)|
-|**Shared Framework**|[![](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/Ubuntu_x64_Release_version_badge.svg)](https://dotnetcli.blob.core.windows.net/dotnet/dev/dnvm/latest.ubuntu.x64.version)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-sharedframework-ubuntu-x64.latest.deb)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-ubuntu-x64.latest.tar.gz)|
-|**Sdk**|[![](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/Ubuntu_x64_Release_version_badge.svg)](https://dotnetcli.blob.core.windows.net/dotnet/dev/dnvm/latest.ubuntu.x64.version)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-sdk-ubuntu-x64.latest.deb)|[Download](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-dev-ubuntu-x64.latest.tar.gz)|
-=======
 [ubuntu-14.04-installer]: https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-ubuntu-x64.latest.deb
 [ubuntu-14.04-installer-checksum]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-ubuntu-x64.latest.deb.sha
 [ubuntu-14.04-targz]: https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-ubuntu-x64.latest.tar.gz
 [ubuntu-14.04-targz-checksum]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-ubuntu-x64.latest.tar.gz.sha
->>>>>>> upstream/master
 
 [ubuntu-16.04-targz]: https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-ubuntu.16.04-x64.latest.tar.gz
 [ubuntu-16.04-targz-checksum]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-ubuntu.16.04-x64.latest.tar.gz.sha
