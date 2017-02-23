@@ -13,7 +13,6 @@ using Microsoft.DotNet.Tools.Pack;
 using Microsoft.DotNet.Tools.Publish;
 using Microsoft.DotNet.Tools.Remove;
 using Microsoft.DotNet.Tools.Restore;
-using Microsoft.DotNet.Tools.RestoreProjectJson;
 using Microsoft.DotNet.Tools.Run;
 using Microsoft.DotNet.Tools.Sln;
 using Microsoft.DotNet.Tools.Test;
@@ -22,7 +21,7 @@ using Microsoft.DotNet.Tools.Cache;
 
 namespace Microsoft.DotNet.Cli
 {
-    public static class BuiltinCommands
+    public static class BuiltInCommandsCatalog
     {
         public static Dictionary<string, BuiltInCommandMetadata> Commands = new Dictionary<string, BuiltInCommandMetadata>
         {
@@ -119,11 +118,5 @@ namespace Microsoft.DotNet.Cli
             }
         };
 
-    }
-
-    public class BuiltInCommandMetadata
-    {
-        public Func<string[], int> Command { get; set; }
-        public Uri DocLink { get; set; }
     }
 }

@@ -64,7 +64,7 @@ Project modification commands:
             app.OnExecute(() => 
             {
                 Cli.BuiltInCommandMetadata builtIn;
-                if (Cli.BuiltinCommands.Commands.TryGetValue(commandNameArgument.Value, out builtIn))
+                if (Cli.BuiltInCommandsCatalog.Commands.TryGetValue(commandNameArgument.Value, out builtIn))
                 {
                     var p = Process.Start(GetProcessStartInfo(builtIn));
                     p.WaitForExit();

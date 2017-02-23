@@ -172,7 +172,7 @@ namespace Microsoft.DotNet.Cli
             // Func<string[], int> builtIn;
             // if (s_builtIns.TryGetValue(command, out builtIn))
             BuiltInCommandMetadata builtIn;
-            if (BuiltinCommands.Commands.TryGetValue(command, out builtIn))
+            if (BuiltInCommandsCatalog.Commands.TryGetValue(command, out builtIn))
             {
                 exitCode = builtIn.Command(appArgs.ToArray());
             }
@@ -219,7 +219,7 @@ namespace Microsoft.DotNet.Cli
 
         internal static bool TryGetBuiltInCommand(string commandName, out BuiltInCommandMetadata builtInCommand)
         {
-            return BuiltinCommands.Commands.TryGetValue(commandName, out builtInCommand);
+            return BuiltInCommandsCatalog.Commands.TryGetValue(commandName, out builtInCommand);
         }
 
         private static void PrintVersion()
