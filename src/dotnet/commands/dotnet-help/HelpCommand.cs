@@ -74,6 +74,7 @@ Project modification commands:
                 else
                 {
                     Reporter.Error.WriteLine(String.Format(LocalizableStrings.CommandDoesNotExist, commandNameArgument.Value));
+                    return 1;
                 }
                 return 0;
             });

@@ -8,7 +8,7 @@ using Microsoft.Build.Construction;
 using Microsoft.DotNet.Tools.Test.Utilities;
 using Xunit;
 using FluentAssertions;
-using H = Microsoft.DotNet.Tools.Help;
+using HelpActual = Microsoft.DotNet.Tools.Help;
 
 namespace Microsoft.DotNet.Help.Tests
 {
@@ -80,7 +80,7 @@ Advanced Commands:
         [WindowsOnlyFact]
         public void WhenRunOnWindowsDotnetHelpCommandShouldContainProperProcessInformation()
         {
-          var proc = H.HelpCommand.ConfigureProcess("https://aka.ms/dotnet-build");
+          var proc = HelpActual.HelpCommand.ConfigureProcess("https://aka.ms/dotnet-build");
           Assert.Equal("cmd", proc.StartInfo.FileName);
           Assert.Equal("/c start https://aka.ms/dotnet-build", proc.StartInfo.Arguments);
         }
@@ -88,7 +88,7 @@ Advanced Commands:
         [LinuxOnlyFact]
         public void WhenRunOnLinuxDotnetHelpCommandShouldContainProperProcessInformation()
         {
-          var proc = H.HelpCommand.ConfigureProcess("https://aka.ms/dotnet-build");
+          var proc = HelpActual.HelpCommand.ConfigureProcess("https://aka.ms/dotnet-build");
           Assert.Equal("xdg-open", proc.StartInfo.FileName);
           Assert.Equal("https://aka.ms/dotnet-build", proc.StartInfo.Arguments);
         
@@ -96,7 +96,7 @@ Advanced Commands:
         [MacOsOnlyFact]
         public void WhenRunOnMacOsDotnetHelpCommandShouldContainProperProcessInformation()
         {
-          var proc = H.HelpCommand.ConfigureProcess("https://aka.ms/dotnet-build");
+          var proc = HelpActual.HelpCommand.ConfigureProcess("https://aka.ms/dotnet-build");
           Assert.Equal("open", proc.StartInfo.FileName);
           Assert.Equal("https://aka.ms/dotnet-build", proc.StartInfo.Arguments);
         }
