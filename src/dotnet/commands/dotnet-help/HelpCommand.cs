@@ -66,8 +66,10 @@ Project modification commands:
                 Cli.BuiltInCommandMetadata builtIn;
                 if (Cli.BuiltInCommandsCatalog.Commands.TryGetValue(commandNameArgument.Value, out builtIn))
                 {
-                    var p = Process.Start(GetProcessStartInfo(builtIn));
-                    p.WaitForExit();
+                    // var p = Process.Start(GetProcessStartInfo(builtIn));
+                    var process = ConfigureProcess(builtIn.DocLink.ToString());
+                    process.Start();
+                    process.WaitForExit();
                 }
                 else
                 {
@@ -83,7 +85,6 @@ Project modification commands:
             }
             else
             {
-                // return Cli.Program.Main(new[] { args[0], "--help" });
                 return app.Execute(args);
             }
         }
@@ -102,7 +103,7 @@ Project modification commands:
             Reporter.Output.WriteLine(Product.LongName + versionString);
         }
 
-        private static ProcessStartInfo GetProcessStartInfo(Cli.BuiltInCommandMetadata builtIn)
+        public static Process ConfigureProcess(string docUrl)
         {
             ProcessStartInfo psInfo;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -110,7 +111,7 @@ Project modification commands:
                 psInfo = new ProcessStartInfo
                 {
                     FileName = "cmd",
-                    Arguments = $"/c start {builtIn.DocLink.ToString()}"
+                    Arguments = $"/c start {docUrl}"
                 };
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -118,7 +119,7 @@ Project modification commands:
                 psInfo = new ProcessStartInfo
                 {
                     FileName = "open",
-                    Arguments = builtIn.DocLink.ToString()
+                    Arguments = docUrl
                 };
             }
             else
@@ -126,11 +127,14 @@ Project modification commands:
                 psInfo = new ProcessStartInfo
                 {
                     FileName = "xdg-open",
-                    Arguments = builtIn.DocLink.ToString()
+                    Arguments = docUrl
                 };
             }
-            return psInfo;
-
+            
+            return new Process
+            {
+                StartInfo = psInfo
+            };
         }
     }
 }
