@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="compile/LzmaArchive.targets" />
-  <Import Project="crossgen/Crossgen.targets" />
 
   <ItemGroup>
     <PublishOutputExtensions Include="$(ExeExtension);.dll;.pdb;.deps.json;.runtimeconfig.json" />
-    <BundledTools Include="MSBuild;NuGet.CommandLine.XPlat;dotnet" />
     <MSBuildImportsContent Include="$(MSBuildImportsDir)/**/*" /> 
   </ItemGroup>
 
@@ -16,81 +14,19 @@
                                            BuildProjectsForNuGetPackages;
                                            GetNuGetPackagesArchive;" />
 
-  <Target Name="CompileCLI"
-          DependsOnTargets="InitCrossgenProps;">
-      <ItemGroup>
-        <SharedFramework Remove="*" />
-        <SharedFramework Include="$(SharedFrameworkPublishDirectory)/**/*" />
+  <Target Name="CompileCLI">
+    <RemoveDir Directories="$(StageDirectory)" />
+    <MakeDir Directories="$(StageDirectory)"/>
 
-        <RuntimeTargetsAssetsToRemoveFromDeps Remove="*" />
-        <RuntimeTargetsAssetsToRemoveFromDeps Include="MSBuild" />
-        
-        <RuntimeAssetsToRemoveFromDeps Remove="*" />
-        <RuntimeAssetsToRemoveFromDeps Include="redist" />
-        <RuntimeAssetsToRemoveFromDeps Include="tool_msbuild" />
-        <RuntimeAssetsToRemoveFromDeps Include="tool_nuget" />
-      </ItemGroup>
-
-      <RemoveDir Directories="$(StageDirectory)" />
-      <MakeDir Directories="$(StageDirectory)"/>
-
-      <!-- CopySharedFramework -->
-      <Copy SourceFiles="@(SharedFramework)"
-            DestinationFiles="@(SharedFramework->'$(StageDirectory)/%(RecursiveDir)%(Filename)%(Extension)')" />
-
-    <!-- Workaround for https://github.com/dotnet/sdk/issues/115 -->
-    <ItemGroup>
-      <HackFilesToCopy Include="$(NuGetPackagesDir)\microsoft.build.runtime\$(CLI_MSBuild_Version)\contentFiles\any\netcoreapp1.0\**;
-                                $(NuGetPackagesDir)\microsoft.build.runtime\$(CLI_MSBuild_Version)\contentFiles\any\netcoreapp1.1\**;
-                                $(NuGetPackagesDir)\microsoft.codeanalysis.build.tasks\$(CLI_Roslyn_Version)\contentFiles\any\any\**;
-                                $(NuGetPackagesDir)\microsoft.testplatform.cli\$(CLI_TestPlatform_Version)\contentFiles\any\any\**" />
-    </ItemGroup>
-    <Copy SourceFiles="@(HackFilesToCopy)"
-          DestinationFiles="@(HackFilesToCopy->'$(SdkOutputDirectory)/%(RecursiveDir)%(Filename)%(Extension)')" />
-    
     <!-- Publish DotNet -->
     <DotNetPublish ToolPath="$(Stage0Directory)"
-                   Output="$(SdkOutputDirectory)"
                    Configuration="$(Configuration)"
-                   VersionSuffix="$(CommitCount)"
-                   ProjectPath="$(SrcDirectory)/redist/redist.csproj"
-                   MSBuildArgs="/p:GenerateRuntimeConfigurationFiles=true" />
+                   ProjectPath="$(RootProject)" />
 
     <!-- Publish Roslyn -->
     <DotNetPublish ToolPath="$(Stage0Directory)"
-                   Output="$(SdkOutputDirectory)/Roslyn"
                    Configuration="$(Configuration)"
-                   VersionSuffix="$(CommitCount)"
                    ProjectPath="$(SrcDirectory)/tool_roslyn/tool_roslyn.csproj" />
-
-      <RemoveAssetFromDepsPackages DepsFile="$(SdkOutputDirectory)/redist.deps.json"
-                                   SectionName="runtime"
-                                   AssetPath="%(RuntimeAssetsToRemoveFromDeps.Identity).dll" />
-
-      <Copy SourceFiles="$(SdkOutputDirectory)/redist.deps.json"
-            DestinationFiles="$(SdkOutputDirectory)/%(BundledTools.Identity).deps.json" />
-
-      <Copy SourceFiles="$(SdkOutputDirectory)/redist.runtimeconfig.json"
-            DestinationFiles="$(SdkOutputDirectory)/%(BundledTools.Identity).runtimeconfig.json" />
-
-      <ChangeEntryPointLibraryName
-            DepsFile="$(SdkOutputDirectory)/%(BundledTools.Identity).deps.json"
-            NewName="%(BundledTools.Identity).deps.json" />
-
-      <!-- cleanup project output we don't need -->
-      <Delete Files="$(SdkOutputDirectory)/redist%(PublishOutputExtensions.Identity)" />
-      <Delete Files="$(SdkOutputDirectory)/tool_msbuild%(PublishOutputExtensions.Identity)" />
-      <Delete Files="$(SdkOutputDirectory)/tool_nuget%(PublishOutputExtensions.Identity)" />
-
-      <!-- Copy Host to SDK Directory -->
-      <Copy SourceFiles="$(SharedFrameworkNameVersionPath)/$(DotnetHostBaseName)"
-            DestinationFiles="$(SdkOutputDirectory)/corehost$(ExeExtension)" />
-
-      <Copy SourceFiles="$(SharedFrameworkNameVersionPath)/$(DotnetHostFxrBaseName)"
-            DestinationFiles="$(SdkOutputDirectory)/$(DotnetHostFxrBaseName)" />
-
-      <Copy SourceFiles="$(SharedFrameworkNameVersionPath)/$(HostPolicyBaseName)"
-            DestinationFiles="$(SdkOutputDirectory)/$(HostPolicyBaseName)" />
 
       <!-- copy core sdk -->
       <Copy SourceFiles="@(MSBuildImportsContent)"
@@ -102,7 +38,7 @@
                                       $(SdkOutputDirectory)/System.Collections.NonGeneric.dll;
                                       $(SdkOutputDirectory)/System.Private.DataContractSerialization.dll" />
       </ItemGroup>
-    
+
       <!-- Move these "1.0" assemblies that TestPlatform lays down out of the way so crossgen doesn't pick them up.
            We need https://github.com/dotnet/cli/issues/5464 fixed, so test platform is in a separate directory -->
       <Move SourceFiles="@(NETCore10Assemblies)"
@@ -177,11 +113,6 @@
       <!-- Move the "1.0" assemblies back -->
       <Move SourceFiles="@(NETCore10Assemblies->'$(SdkOutputDirectory)/%(Filename)%(Extension).bak')"
             DestinationFiles="@(NETCore10Assemblies)" />
-
-      <!-- Generate .version file -->
-      <WriteLinesToFile File="$(SdkOutputDirectory)/.version"
-                        Lines="$(CommitHash);$(SdkVersion);$(Rid)"
-                        Overwrite="true" />
 
       <ItemGroup>
         <MSBuildTargetsToCopy Include="$(MSBuildTargetsDirectory)/**/*.targets" />
