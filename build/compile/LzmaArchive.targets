@@ -3,7 +3,6 @@
 
     <PropertyGroup>
       <UploadNuGetPackagesArchiveToAzure>false</UploadNuGetPackagesArchiveToAzure>
-      <ArchiverDll>$(ToolsOutputDirectory)/Archiver.dll</ArchiverDll>
       <NuGetConfigContent>
         &lt;configuration&gt;
         &lt;packageSources&gt;
@@ -11,7 +10,13 @@
         &lt;/packageSources&gt;
         &lt;/configuration&gt;
       </NuGetConfigContent>
+
+      <NuGetPackagesArchiveProject>$(IntermediateDirectory)/NuGetPackagesArchiveProject</NuGetPackagesArchiveProject>
+      <NuGetPackagesArchiveFolder>$(IntermediateDirectory)/NuGetPackagesArchiveFolder</NuGetPackagesArchiveFolder>
       <LZMANuGetConfigFilePath>$(NuGetPackagesArchiveProject)/Nuget.config</LZMANuGetConfigFilePath>
+      <ToolsOutputDirectory>$(BaseOutputDirectory)/tools</ToolsOutputDirectory>
+      <ArchiverDll>$(ToolsOutputDirectory)/Archiver.dll</ArchiverDll>
+      <FinalArchive>$(SdkOutputDirectory)/nuGetPackagesArchive.lzma</FinalArchive>
     </PropertyGroup>
 
     <Target Name="GetNuGetPackagesArchive"
@@ -84,12 +89,12 @@
                         File="$(LZMANuGetConfigFilePath)" 
                         Lines="$(NuGetConfigContent)" />
 
-      <DotNetNew ToolPath="$(Stage2Directory)"
+      <DotNetNew ToolPath="$(OutputDirectory)"
                  TemplateType="console"
                  TemplateArgs="--debug:ephemeral-hive"
                  WorkingDirectory="$(NuGetPackagesArchiveProject)/Console" />
 
-      <DotNetRestore ToolPath="$(Stage2Directory)"
+      <DotNetRestore ToolPath="$(OutputDirectory)"
                      Packages="$(NuGetPackagesArchiveFolder)"
                      SkipInvalidConfigurations="True"
                      WorkingDirectory="$(NuGetPackagesArchiveProject)/Console" />
@@ -98,17 +103,17 @@
 
       <Message Text="Publishing Archiver" />
 
-      <DotNetPublish ToolPath="$(Stage2Directory)"
+      <DotNetPublish ToolPath="$(OutputDirectory)"
                      WorkingDirectory="$(RepoRoot)/tools/Archiver"
                      Output="$(ToolsOutputDirectory)"
                      Configuration="$(Configuration)" />
 
-      <Exec Command="$(DotnetStage2) $(ArchiverDll) -a $(IntermediateArchive) $(NuGetPackagesArchiveFolder)" />
+      <Exec Command="$(DotnetInOutputDirectory) $(ArchiverDll) -a $(IntermediateArchive) $(NuGetPackagesArchiveFolder)" />
     </Target>
 
     <Target Name="SetupNuGetPackagesArchiveInputsOutputs"
             DependsOnTargets="Prepare">
-      <GenerateNuGetPackagesArchiveVersion ToolPath="$(Stage2Directory)">
+      <GenerateNuGetPackagesArchiveVersion ToolPath="$(OutputDirectory)">
         <Output TaskParameter="Version" PropertyName="NuGetPackagesArchiveVersion"/>
       </GenerateNuGetPackagesArchiveVersion>
       <PropertyGroup>

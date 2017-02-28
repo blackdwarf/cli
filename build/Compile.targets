@@ -2,9 +2,15 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="compile/LzmaArchive.targets" />
 
+  <PropertyGroup>
+    <RuntimeNETCoreAppPackageName>runtime.$(CoreCLRRid).microsoft.netcore.app</RuntimeNETCoreAppPackageName>
+    <CrossgenPath>$(NuGetPackagesDir)/$(RuntimeNETCoreAppPackageName)/$(CLI_SharedFrameworkVersion)/tools/crossgen$(ExeExtension)</CrossgenPath>
+    <LibCLRJitPath>$(NuGetPackagesDir)/$(RuntimeNETCoreAppPackageName)/$(CLI_SharedFrameworkVersion)/runtimes/$(CoreCLRRid)/native/$(DynamicLibPrefix)clrjit$(DynamicLibExtension)</LibCLRJitPath>
+    <SharedFrameworkNameVersionPath>$(OutputDirectory)/shared/$(SharedFrameworkName)/$(SharedFrameworkVersion)</SharedFrameworkNameVersionPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <PublishOutputExtensions Include="$(ExeExtension);.dll;.pdb;.deps.json;.runtimeconfig.json" />
-    <MSBuildImportsContent Include="$(MSBuildImportsDir)/**/*" /> 
   </ItemGroup>
 
   <Target Name="Compile" DependsOnTargets="Prepare;
@@ -15,8 +21,8 @@
                                            GetNuGetPackagesArchive;" />
 
   <Target Name="CompileCLI">
-    <RemoveDir Directories="$(StageDirectory)" />
-    <MakeDir Directories="$(StageDirectory)"/>
+    <RemoveDir Directories="$(OutputDirectory)" />
+    <MakeDir Directories="$(OutputDirectory)"/>
 
     <!-- Publish DotNet -->
     <DotNetPublish ToolPath="$(Stage0Directory)"
@@ -115,29 +121,18 @@
             DestinationFiles="@(NETCore10Assemblies)" />
 
       <ItemGroup>
-        <MSBuildTargetsToCopy Include="$(MSBuildTargetsDirectory)/**/*.targets" />
-        <MSBuildTargetsToCopy Include="$(MSBuildTargetsDirectory)/**/*.Targets" />
-        <MSBuildTargetsToCopy Include="$(MSBuildTargetsDirectory)/**/*.props" />
-        <MSBuildTargetsToCopy Include="$(MSBuildTargetsDirectory)/**/*.overridetasks" />
-        <MSBuildTargetsToCopy Include="$(MSBuildTargetsDirectory)/**/*.tasks" />
-      </ItemGroup>
-
-      <Copy SourceFiles="@(MSBuildTargetsToCopy)"
-            DestinationFiles="@(MSBuildTargetsToCopy->'$(SdkOutputDirectory)/%(RecursiveDir)%(Filename)%(Extension)')" />
-
-      <ItemGroup>
-        <FilesToClean Include="$(StageDirectory)/sdk/**/vbc.exe" />
+        <FilesToClean Include="$(OutputDirectory)/sdk/**/vbc.exe" />
       </ItemGroup>
 
       <Delete Files="@(FilesToClean)" />
 
       <ItemGroup>
-        <FilesToCopy Include="$(StageDirectory)/**/*" />
-        <PdbsToClean Include="$(StageDirectory)/sdk/**/*.pdb" />
+        <FilesToCopy Include="$(OutputDirectory)/**/*" />
+        <PdbsToClean Include="$(OutputDirectory)/sdk/**/*.pdb" />
       </ItemGroup>
 
       <Copy SourceFiles="@(FilesToCopy)"
-          DestinationFiles="@(FilesToCopy->'$(StageSymbolsDirectory)\%(RecursiveDir)%(Filename)%(Extension)')" />
+          DestinationFiles="@(FilesToCopy->'$(SymbolsDirectory)\%(RecursiveDir)%(Filename)%(Extension)')" />
 
       <Delete Files="@(PdbsToClean)" />
   </Target>
