@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ProjectJsonMigration.Tests
 {
     public class GivenThatIWantToMigrateTFMs : TestBase
     {
-        [Fact(Skip="Emitting this until x-targetting full support is in")]
+        [Fact(Skip="Emitting this until x-targeting full support is in")]
         public void MigratingNetcoreappProjectDoesNotPopulateTargetFrameworkIdentifierAndTargetFrameworkVersion()
         {
             var testDirectory = Temp.CreateDirectory().Path;
@@ -148,7 +148,7 @@ namespace Microsoft.DotNet.ProjectJsonMigration.Tests
         {
             var testDirectory = Temp.CreateDirectory().Path;
             var testPJ = new ProjectJsonBuilder(TestAssets)
-                .FromTestAssetBase("TestAppWithMultipleFullFrameworksOnly")
+                .FromTestAssetBase("AppWith4netTfm0Rid")
                 .SaveToDisk(testDirectory);
 
             var projectContexts = ProjectContext.CreateContextForEachFramework(testDirectory);
