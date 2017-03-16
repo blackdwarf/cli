@@ -1,4 +1,7 @@
-﻿namespace Microsoft.DotNet.Tools.Help
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.DotNet.Tools.Help
 {
     internal class LocalizableStrings
     {
@@ -63,5 +66,18 @@
         public const string CleanDefinition = "Clean build output(s).";
 
         public const string SlnDefinition = "Modify solution (SLN) files.";
+
+        public const string CommandDoesNotExist = "Specified command '{0}' is not a valid CLI command. Please specify a valid CLI commands. For more information, run dotnet help.";
+
+        public const string AppFullName = ".NET CLI help utility";
+
+        public const string AppDescription = "Utility to get more detailed help about each of the CLI commands.";
+
+        public const string CommandArgumentName = "COMMAND_NAME";
+
+        public const string CommandArgumentDescription = "CLI command for which to view more detailed help.";
+
+
+
     }
 }

@@ -1,4 +1,7 @@
-﻿using Microsoft.DotNet.Tools.Publish;
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using Microsoft.DotNet.Tools.Publish;
 using FluentAssertions;
 using Xunit;
 using System;
@@ -21,7 +24,7 @@ namespace Microsoft.DotNet.Cli.MSBuild.Tests
         [InlineData(new string[] { "-c", "<configuration>" }, "/p:Configuration=<configuration>")]
         [InlineData(new string[] { "--configuration", "<configuration>" }, "/p:Configuration=<configuration>")]
         [InlineData(new string[] { "--version-suffix", "<version-suffix>" }, "/p:VersionSuffix=<version-suffix>")]
-        [InlineData(new string[] { "--filter", "<filter>" }, "/p:FilterProjFile=<filter>")]
+        [InlineData(new string[] { "--filter", "<filter>" }, "/p:FilterProjectFiles=<filter>")]
         [InlineData(new string[] { "-v", "<verbosity>" }, "/verbosity:<verbosity>")]
         [InlineData(new string[] { "--verbosity", "<verbosity>" }, "/verbosity:<verbosity>")]
         [InlineData(new string[] { "<project>" }, "<project>")]
