@@ -20,6 +20,9 @@ namespace Microsoft.DotNet.Tools
         public const string P2P = "Project to Project";
         public const string P2PReference = "Project to Project reference";
         public const string Package = "Package";
+        public const string PkgRef = "Package Reference";
+        public const string PackageReferenceOneOrMore = "Package reference(s)";
+        public const string PackageReferenceVersion = "Version";
         public const string Solution = "Solution";
         public const string SolutionFile = "Solution file";
         public const string Executable = "Executable";
@@ -151,6 +154,7 @@ namespace Microsoft.DotNet.Tools
         /// list
         public const string NoReferencesFound = "There are no {0} references in project {1}. ;; {0} is the type of the item being requested (project, package, p2p) and {1} is the object operated on (a project file or a solution file). ";
         public const string NoProjectsFound = "No projects found in the solution.";
+        public const string NoPkgRefencesFound = "There are no {0} references in project {1}. ;; {0} is the type of the item being requested (project, package, p2p) and {1} is the object operated on (a project file or a solution file). ";
 
         /// arguments
         public const string ArgumentsProjectOrSolutionDescription = "The project or solution to operation on. If a file is not specified, the current directory is searched.";
