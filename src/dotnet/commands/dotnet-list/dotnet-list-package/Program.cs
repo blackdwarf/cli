@@ -38,12 +38,12 @@ namespace Microsoft.DotNet.Tools.List.PackageReferences
                 return 0;
             }
 
-            Reporter.Output.WriteLine($"{CommonLocalizableStrings.PackageReferenceOneOrMore}\t{CommonLocalizableStrings.PackageReferenceVersion}");
-            Reporter.Output.WriteLine(new string('-', CommonLocalizableStrings.PackageReferenceOneOrMore.Length));
+            Reporter.Output.WriteLine($"{CommonLocalizableStrings.PackageReferenceOneOrMore, -50} {CommonLocalizableStrings.PackageReferenceVersion, -20}");
+            Reporter.Output.WriteLine($"{new string('-', CommonLocalizableStrings.PackageReferenceOneOrMore.Length), -50} {new string('-', CommonLocalizableStrings.PackageReferenceVersion.Length), -20}");
             foreach (var pkg in packageRefs)
             {
                 var metadata = pkg.Metadata.SingleOrDefault(pm => pm.Name == "Version");
-                Reporter.Output.WriteLine($"{pkg.Include}\t{metadata.Value}");
+                Reporter.Output.WriteLine($"{pkg.Include, -50} {metadata.Value, -20}");
             }
 
             return 0;
