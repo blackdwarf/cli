@@ -5,11 +5,11 @@ using Microsoft.DotNet.Cli.Utils;
 
 namespace Microsoft.DotNet.Tools.Test.Utilities
 {
-    public sealed class PackageReferenceCommand : TestCommand
+    public sealed class ListPackageReferenceCommand : TestCommand
     {
         private string _projectName = null;
 
-        public PackageReferenceCommand()
+        public ListPackageReferenceCommand()
             : base("dotnet")
         {
         }
