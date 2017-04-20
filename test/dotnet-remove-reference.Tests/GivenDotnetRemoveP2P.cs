@@ -15,17 +15,15 @@ namespace Microsoft.DotNet.Cli.Remove.Reference.Tests
     {
         private const string HelpText = @".NET Remove Project to Project reference Command
 
-Usage: dotnet remove <PROJECT> reference [options] [args]
+Usage: dotnet remove <PROJECT> reference [options] <args>
 
 Arguments:
-  <PROJECT>  The project file to operate on. If a file is not specified, the command will search the current directory for one.
+  <PROJECT>   The project file to operate on. If a file is not specified, the command will search the current directory for one.
+  <args>      Project to project references to remove
 
 Options:
-  -h|--help                   Show help information
-  -f|--framework <FRAMEWORK>  Remove reference only when targeting a specific framework
-
-Additional Arguments:
- Project to project references to remove
+  -h, --help                    Show help information
+  -f, --framework <FRAMEWORK>   Remove reference only when targeting a specific framework
 ";
 
         const string FrameworkNet451Arg = "-f net451";
@@ -55,7 +53,7 @@ Additional Arguments:
 
             try
             {
-                string newArgs = $"classlib -o \"{projDir.Path}\"";
+                string newArgs = $"classlib -o \"{projDir.Path}\" --no-restore";
                 new NewCommandShim()
                     .WithWorkingDirectory(projDir.Path)
                     .ExecuteWithCapturedOutput(newArgs)
@@ -140,8 +138,7 @@ Additional Arguments:
                     .WithProject("one two three")
                     .Execute("proj.csproj");
             cmd.ExitCode.Should().NotBe(0);
-            cmd.StdErr.Should().Be("Unrecognized command or argument 'two'");
-            cmd.StdOut.Should().Be("Specify --help for a list of available options and commands.");
+            cmd.StdErr.Should().BeVisuallyEquivalentTo("Unrecognized command or argument 'two'\r\nUnrecognized command or argument 'three'");
         }
 
         [Theory]

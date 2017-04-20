@@ -59,7 +59,7 @@ LINUX_PORTABLE_INSTALL_ARGS=
 CUSTOM_BUILD_ARGS=
 
 # Set nuget package cache under the repo
-export NUGET_PACKAGES="$REPOROOT/.nuget/packages"
+[ -z $NUGET_PACKAGES ] && export NUGET_PACKAGES="$REPOROOT/.nuget/packages"
 
 args=( "$@" )
 
@@ -90,6 +90,12 @@ while [[ $# > 0 ]]; do
             args=( "${args[@]/$2}" )
             shift
             ;;
+        --runtime-id)
+            CUSTOM_BUILD_ARGS="/p:Rid=\"$2\""
+            args=( "${args[@]/$1}" )
+            args=( "${args[@]/$2}" )
+            shift
+            ;;
         # This is here just to eat away this parameter because CI still passes this in.
         --targets)            
             args=( "${args[@]/$1}" )
@@ -97,9 +103,8 @@ while [[ $# > 0 ]]; do
             shift
             ;;
         --linux-portable)
-            LINUX_PORTABLE_INSTALL_ARGS="--linux-portable"
-            # Until we get test support for 2.0 we need to pass in the targets without test.
-            CUSTOM_BUILD_ARGS="/p:Rid=\"linux-x64\" /p:OSName=\"linux\" /p:CLITargets=\"Prepare;Compile;Package;Publish\""
+            LINUX_PORTABLE_INSTALL_ARGS="--runtime-id linux-x64"
+            CUSTOM_BUILD_ARGS="/p:Rid=\"linux-x64\" /p:OSName=\"linux\""
             args=( "${args[@]/$1}" )
             ;;
         --help)
@@ -147,6 +152,9 @@ export VSTEST_TRACE_BUILD=1
 
 DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 toolsLocalPath="$REPOROOT/build_tools"
+if [ ! -z $BOOTSTRAP_INSTALL_DIR]; then
+  toolsLocalPath = $BOOTSTRAP_INSTALL_DIR
+fi
 bootStrapperPath="$toolsLocalPath/bootstrap.sh"
 dotnetInstallPath="$toolsLocalPath/dotnet-install.sh"
 if [ ! -f $bootStrapperPath ]; then
@@ -158,18 +166,19 @@ if [ ! -f $bootStrapperPath ]; then
 fi
 
 $bootStrapperPath --dotNetInstallBranch master --repositoryRoot "$REPOROOT" --toolsLocalPath "$toolsLocalPath" --cliInstallPath $DOTNET_INSTALL_DIR_PJ --architecture $ARCHITECTURE > bootstrap.log
-
-if [ $? != 0 ]; then
-    echo "run-build: Error: Boot-strapping failed with exit code $?, see bootstrap.log for more information." >&2
-    exit $?
+EXIT_CODE=$?
+if [ $EXIT_CODE != 0 ]; then
+    echo "run-build: Error: Boot-strapping failed with exit code $EXIT_CODE, see bootstrap.log for more information." >&2
+    exit $EXIT_CODE
 fi
 
 # now execute the script
 echo "installing CLI: $dotnetInstallPath --channel \"master\" --install-dir $DOTNET_INSTALL_DIR --architecture \"$ARCHITECTURE\" $LINUX_PORTABLE_INSTALL_ARGS"
 $dotnetInstallPath --channel "master" --install-dir $DOTNET_INSTALL_DIR --architecture "$ARCHITECTURE" $LINUX_PORTABLE_INSTALL_ARGS
-if [ $? != 0 ]; then
-    echo "run-build: Error: Boot-strapping post-PJ stage0 with exit code $?." >&2
-    exit $?
+EXIT_CODE=$?
+if [ $EXIT_CODE != 0 ]; then
+    echo "run-build: Error: Boot-strapping post-PJ stage0 with exit code $EXIT_CODE." >&2
+    exit $EXIT_CODE
 fi
 
 # Put stage 0 on the PATH (for this shell only)

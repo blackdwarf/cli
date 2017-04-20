@@ -14,6 +14,8 @@ namespace Microsoft.DotNet.Restore.Tests
 {
     public class GivenThatIWantToRestoreApp : TestBase
     {
+        private static string RepoRootNuGetConfig = Path.Combine(RepoDirectoriesProvider.RepoRoot, "NuGet.Config");
+
         [Fact]
         public void ItRestoresAppToSpecificDirectory()
         {
@@ -22,14 +24,14 @@ namespace Microsoft.DotNet.Restore.Tests
             string dir = "pkgs";
             string fullPath = Path.GetFullPath(Path.Combine(rootPath, dir));
 
-            string newArgs = $"console -o \"{rootPath}\"";
+            string newArgs = $"console -o \"{rootPath}\" --no-restore";
             new NewCommandShim()
                 .WithWorkingDirectory(rootPath)
                 .Execute(newArgs)
                 .Should()
                 .Pass();
 
-            string args = $"--packages \"{dir}\"";
+            string args = $"--configfile {RepoRootNuGetConfig} --packages \"{dir}\"";
             new RestoreCommand()
                  .WithWorkingDirectory(rootPath)
                  .ExecuteWithCapturedOutput(args)
@@ -49,14 +51,14 @@ namespace Microsoft.DotNet.Restore.Tests
             string dir = "pkgs";
             string fullPath = Path.GetFullPath(Path.Combine(rootPath, dir));
 
-            string newArgs = $"classlib -o \"{rootPath}\"";
+            string newArgs = $"classlib -o \"{rootPath}\" --no-restore";
             new NewCommandShim()
                 .WithWorkingDirectory(rootPath)
                 .Execute(newArgs)
                 .Should()
                 .Pass();
 
-            string args = $"--packages \"{dir}\"";
+            string args = $"--configfile {RepoRootNuGetConfig} --packages \"{dir}\"";
             new RestoreCommand()
                 .WithWorkingDirectory(rootPath)
                 .ExecuteWithCapturedOutput(args)
@@ -76,7 +78,7 @@ namespace Microsoft.DotNet.Restore.Tests
             string dir = "pkgs";
             string fullPath = Path.GetFullPath(Path.Combine(rootPath, dir));
 
-            string args = $"--packages \"{dir}\"";
+            string args = $"--configfile {RepoRootNuGetConfig} --packages \"{dir}\"";
             new RestoreCommand()
                 .WithWorkingDirectory(rootPath)
                 .ExecuteWithCapturedOutput(args)

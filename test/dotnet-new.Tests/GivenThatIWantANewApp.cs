@@ -7,6 +7,7 @@ using System.Linq;
 using System.Xml.Linq;
 using FluentAssertions;
 using Microsoft.DotNet.Tools.Test.Utilities;
+using Microsoft.Extensions.DependencyModel;
 using Xunit;
 
 namespace Microsoft.DotNet.New.Tests
@@ -20,13 +21,13 @@ namespace Microsoft.DotNet.New.Tests
 
             new NewCommand()
                 .WithWorkingDirectory(rootPath)
-                .Execute($"console --debug:ephemeral-hive");
+                .Execute($"console --debug:ephemeral-hive --no-restore");
 
             DateTime expectedState = Directory.GetLastWriteTime(rootPath);
 
             var result = new NewCommand()
                 .WithWorkingDirectory(rootPath)
-                .ExecuteWithCapturedOutput($"console --debug:ephemeral-hive");
+                .ExecuteWithCapturedOutput($"console --debug:ephemeral-hive --no-restore");
 
             DateTime actualState = Directory.GetLastWriteTime(rootPath);
 
@@ -59,47 +60,69 @@ namespace Microsoft.DotNet.New.Tests
             string projectFolder,
             string packagesDirectory)
         {
+            var repoRootNuGetConfig = Path.Combine(RepoDirectoriesProvider.RepoRoot, "NuGet.Config");
+
             new NewCommand()
                 .WithWorkingDirectory(projectFolder)
-                .Execute($"{projectType} --debug:ephemeral-hive")
+                .Execute($"{projectType} --debug:ephemeral-hive --no-restore")
                 .Should().Pass();
 
             new RestoreCommand()
                 .WithWorkingDirectory(projectFolder)
-                .Execute($"--packages {packagesDirectory}")
+                .Execute($"--configfile {repoRootNuGetConfig} --packages {packagesDirectory}")
                 .Should().Pass();
         }
 
-        [Fact]
-        public void NewClassLibRestoresCorrectNetStandardLibraryVersion()
+        [Theory]
+        [InlineData("console", "RuntimeFrameworkVersion", "microsoft.netcore.app")]
+        [InlineData("classlib", "NetStandardImplicitPackageVersion", "netstandard.library")]
+        public void NewProjectRestoresCorrectPackageVersion(string type, string propertyName, string packageName)
         {
-            var rootPath = TestAssets.CreateTestDirectory().FullName;
+            var rootPath = TestAssets.CreateTestDirectory(identifier: $"_{type}").FullName;
             var packagesDirectory = Path.Combine(rootPath, "packages");
-            var projectName = "Library";
-            var projectFileName = $"{projectName}.csproj";
+            var projectName = "Project";
+            var expectedVersion = GetFrameworkPackageVersion();
+            var repoRootNuGetConfig = Path.Combine(RepoDirectoriesProvider.RepoRoot, "NuGet.Config");
 
             new NewCommand()
                 .WithWorkingDirectory(rootPath)
-                .Execute($"classlib --name {projectName} -o .")
+                .Execute($"{type} --name {projectName} -o . --debug:ephemeral-hive --no-restore")
                 .Should().Pass();
 
             new RestoreCommand()
                 .WithWorkingDirectory(rootPath)
-                .Execute($"--packages {packagesDirectory}")
+                .Execute($"--configfile {repoRootNuGetConfig} --packages {packagesDirectory}")
                 .Should().Pass();
 
-            var expectedVersion = XDocument.Load(Path.Combine(rootPath, projectFileName))
-                .Elements("Project")
-                .Elements("PropertyGroup")
-                .Elements("NetStandardImplicitPackageVersion")
-                .FirstOrDefault()
-                ?.Value;
-
-            expectedVersion.Should().NotBeNullOrEmpty("Could not find NetStandardImplicitPackageVersion property in a new classlib.");
-
-            new DirectoryInfo(Path.Combine(packagesDirectory, "netstandard.library"))
+            new DirectoryInfo(Path.Combine(packagesDirectory, packageName))
                 .Should().Exist()
                 .And.HaveDirectory(expectedVersion);
+
+            string GetFrameworkPackageVersion()
+            {
+                var dotnetDir = new FileInfo(DotnetUnderTest.FullName).Directory;
+                var sharedFxDir = dotnetDir
+                    .GetDirectory("shared", "Microsoft.NETCore.App")
+                    .EnumerateDirectories()
+                    .Single(d => d.Name.StartsWith("2.0.0"));
+
+                if (packageName == "microsoft.netcore.app")
+                {
+                    return sharedFxDir.Name;
+                }
+
+                var depsFile = Path.Combine(sharedFxDir.FullName, "Microsoft.NETCore.App.deps.json");
+                using (var stream = File.OpenRead(depsFile))
+                using (var reader = new DependencyContextJsonReader())
+                {
+                    var context = reader.Read(stream);
+                    var dependency = context
+                        .RuntimeLibraries
+                        .Single(library => library.Name == packageName);
+
+                    return dependency.Version;
+                }
+            }
         }
     }
 }

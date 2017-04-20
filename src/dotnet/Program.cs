@@ -4,11 +4,13 @@
 using System;
 using System.Linq;
 using System.Text;
+using Microsoft.DotNet.Cli.CommandLine;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Configurer;
 using Microsoft.DotNet.PlatformAbstractions;
 using Microsoft.DotNet.Tools.Help;
 using NuGet.Frameworks;
+using Command = Microsoft.DotNet.Cli.Utils.Command;
 
 namespace Microsoft.DotNet.Cli
 {
@@ -34,11 +36,28 @@ namespace Microsoft.DotNet.Cli
                     return ProcessArgs(args);
                 }
             }
+            catch (HelpException e)
+            {
+                Reporter.Output.WriteLine(e.Message);
+                return 0;
+            }
             catch (Exception e) when (e.ShouldBeDisplayedAsError())
             {
-                Reporter.Error.WriteLine(CommandContext.IsVerbose() ? 
-                        e.ToString().Red().Bold() : 
-                        e.Message.Red().Bold());
+                Reporter.Error.WriteLine(CommandContext.IsVerbose() 
+                    ? e.ToString().Red().Bold() 
+                    : e.Message.Red().Bold());
+
+                var commandParsingException = e as CommandParsingException;
+                if (commandParsingException != null)
+                {
+                    Reporter.Output.WriteLine(commandParsingException.HelpText);
+                }
+
+                return 1;
+            }
+            catch (Exception e) when (!e.ShouldBeDisplayedAsError())
+            {
+                Reporter.Error.WriteLine(e.ToString().Red().Bold());
 
                 return 1;
             }
@@ -60,7 +79,8 @@ namespace Microsoft.DotNet.Cli
             var success = true;
             var command = string.Empty;
             var lastArg = 0;
-            using (INuGetCacheSentinel nugetCacheSentinel = new NuGetCacheSentinel())
+            var cliFallbackFolderPathCalculator = new CliFallbackFolderPathCalculator();
+            using (INuGetCacheSentinel nugetCacheSentinel = new NuGetCacheSentinel(cliFallbackFolderPathCalculator))
             {
                 for (; lastArg < args.Length; lastArg++)
                 {
@@ -92,7 +112,7 @@ namespace Microsoft.DotNet.Cli
                     }
                     else
                     {
-                        ConfigureDotNetForFirstTimeUse(nugetCacheSentinel);
+                        ConfigureDotNetForFirstTimeUse(nugetCacheSentinel, cliFallbackFolderPathCalculator);
 
                         // It's the command, and we're done!
                         command = args[lastArg];
@@ -146,23 +166,27 @@ namespace Microsoft.DotNet.Cli
 
         }
 
-        private static void ConfigureDotNetForFirstTimeUse(INuGetCacheSentinel nugetCacheSentinel)
+        private static void ConfigureDotNetForFirstTimeUse(
+            INuGetCacheSentinel nugetCacheSentinel,
+            CliFallbackFolderPathCalculator cliFallbackFolderPathCalculator)
         {
             using (PerfTrace.Current.CaptureTiming())
             {
-                using (var nugetPackagesArchiver = new NuGetPackagesArchiver())
-                {
-                    var environmentProvider = new EnvironmentProvider();
-                    var commandFactory = new DotNetCommandFactory(alwaysRunOutOfProc: true);
-                    var nugetCachePrimer = 
-                        new NuGetCachePrimer(commandFactory, nugetPackagesArchiver, nugetCacheSentinel);
-                    var dotnetConfigurer = new DotnetFirstTimeUseConfigurer(
-                        nugetCachePrimer,
-                        nugetCacheSentinel,
-                        environmentProvider);
+                var nugetPackagesArchiver = new NuGetPackagesArchiver();
+                var environmentProvider = new EnvironmentProvider();
+                var commandFactory = new DotNetCommandFactory(alwaysRunOutOfProc: true);
+                var nugetConfig = new NuGetConfig(cliFallbackFolderPathCalculator);
+                var nugetCachePrimer = new NuGetCachePrimer(
+                    nugetPackagesArchiver,
+                    nugetCacheSentinel,
+                    nugetConfig,
+                    cliFallbackFolderPathCalculator);
+                var dotnetConfigurer = new DotnetFirstTimeUseConfigurer(
+                    nugetCachePrimer,
+                    nugetCacheSentinel,
+                    environmentProvider);
 
-                    dotnetConfigurer.Configure();
-                }
+                dotnetConfigurer.Configure();
             }
         }
 
